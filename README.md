@@ -26,7 +26,7 @@ Instead of randomly assigning parking spots, this system treats the parking lot 
 4. **Departure:** When a car leaves, the slot is marked as free, and the system instantly recalculates the empty gaps.
 
 ## Team (Smashers, T104)
-* **Bhavya Jain** (Team Lead)
+* **Bhavya Jain**
 * **Madhvan Bansal**
 * **Neha Sharma**
 * **Himanshi Negi**
