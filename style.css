@@ -1,0 +1,313 @@
+/* Premium Modern Reset and Base */
+:root {
+    --bg-color: #121212;
+    --dashboard-bg: #1e1e1e;
+    --text-main: #e0e0e0;
+    --text-muted: #9e9e9e;
+    --accent: #4caf50;
+    --accent-hover: #43a047;
+    --asphalt: #2c2f33;
+    --asphalt-dark: #23272a;
+    --line-color: #f1c40f;
+    --slot-free: rgba(46, 204, 113, 0.1);
+    --slot-free-border: #2ecc71;
+    --slot-occ: rgba(231, 76, 60, 0.1);
+    --slot-occ-border: #e74c3c;
+    --font-family: 'Inter', sans-serif;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    height: 100%;
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Dashboard Sidebar */
+.dashboard {
+    width: 350px;
+    background-color: var(--dashboard-bg);
+    padding: 30px;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.dashboard header h1 {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 5px 0;
+    background: -webkit-linear-gradient(45deg, #4caf50, #81c784);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.dashboard header p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 0 30px 0;
+}
+
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.vehicle-entry, .algo-status {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vehicle-entry h2, .algo-status h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+}
+
+.input-group select {
+    width: 100%;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-main);
+    border-radius: 6px;
+    font-family: var(--font-family);
+    outline: none;
+}
+
+.input-group select:focus {
+    border-color: var(--accent);
+}
+
+.btn-park {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-park:hover {
+    background-color: var(--accent-hover);
+}
+
+.status-display {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    min-height: 80px;
+}
+
+.thinking-text {
+    color: #ffd54f !important;
+    font-style: italic;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+/* Parking Lot View */
+.parking-lot-view {
+    flex: 1;
+    background-color: var(--asphalt);
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-image: radial-gradient(var(--asphalt-dark) 15%, transparent 16%), radial-gradient(var(--asphalt-dark) 15%, transparent 16%);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+}
+
+/* Toll Booth Area */
+.road-entrance {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.entry-sign {
+    background-color: transparent;
+    padding: 10px 30px;
+    border: 2px dashed #f1c40f;
+    border-radius: 8px;
+    text-align: center;
+    z-index: 2;
+}
+
+.entry-sign span {
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #f1c40f;
+    text-transform: uppercase;
+}
+
+.road-lines {
+    width: 8px;
+    height: 60px;
+    background: repeating-linear-gradient(to bottom, transparent, transparent 10px, var(--line-color) 10px, var(--line-color) 30px);
+    margin-top: 10px;
+}
+
+/* Parking Layout */
+.parking-lot {
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.parking-zone {
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.parking-zone h3 {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.slots-container {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.driveway {
+    height: 60px;
+    width: 100%;
+    position: relative;
+}
+.driveway::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: repeating-linear-gradient(to right, transparent, transparent 20px, rgba(255,255,255,0.3) 20px, rgba(255,255,255,0.3) 60px);
+    transform: translateY(-50%);
+}
+
+/* Specific Slot Styles */
+.small_slot, .medium_slot, .large_slot {
+    position: relative;
+    border: 2px solid var(--line-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.slot-id {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Sizing */
+.small_slot {
+    width: 50px;
+    height: 80px;
+}
+
+.medium_slot {
+    width: 70px;
+    height: 110px;
+}
+
+.large_slot {
+    width: 90px;
+    height: 140px;
+}
+
+/* Status overlays */
+.small_slot.occupied, .medium_slot.occupied, .large_slot.occupied {
+    background-color: var(--slot-occ);
+}
+
+/* Fake cars */
+.car-bike, .car-medium, .car-large {
+    border-radius: 6px;
+    position: relative;
+    box-shadow: 2px 5px 10px rgba(0,0,0,0.5);
+}
+
+.car-bike {
+    width: 20px;
+    height: 45px;
+    background-color: #3498db;
+    border-radius: 10px;
+}
+
+.car-medium {
+    width: 45px;
+    height: 85px;
+    background-color: #e67e22;
+}
+
+.car-large {
+    width: 60px;
+    height: 110px;
+    background-color: #9b59b6;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+    .app-container {
+        flex-direction: column;
+        overflow: auto;
+    }
+    .dashboard {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .parking-lot-view {
+        overflow: visible;
+    }
+}

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking Allocator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Dashboard for controls -->
+        <aside class="dashboard">
+            <header>
+                <h1>Parking Lot</h1>
+            </header>
+
+            <div class="control-panel">
+                <div class="vehicle-entry">
+                    <h2>Vehicle Entry</h2>
+                    <div class="input-group">
+                        <label for="vehicleSize">Vehicle Size:</label>
+                        <select id="vehicleSize">
+                            <option value="small">Small (Bike)</option>
+                            <option value="medium">Medium (Car)</option>
+                            <option value="large">Large (SUV)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="algoStrategy">Allocation Strategy:</label>
+                        <select id="algoStrategy">
+                            <option value="best-fit">Best-Fit</option>
+                        </select>
+                    </div>
+                    <button class="btn-park">Assign Slot</button>
+                </div>
+                
+                <div class="algo-status">
+                    <h2>Algorithm Status</h2>
+                    <div class="status-display">
+                        <p>Status: Ready for next vehicle.</p>
+                        <p class="thinking-text">[ Algorithm is idle... ]</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Actual Parking Lot View -->
+        <main class="parking-lot-view">
+            <div class="road-entrance">
+                <div class="entry-sign">
+                    <span>ENTRY</span>
+                </div>
+                <div class="road-lines"></div>
+            </div>
+
+            <div class="parking-lot">
+                <!-- Zone A: Small -->
+                <div class="parking-zone zone-small">
+                    <h3>Zone A: Bikes (Small)</h3>
+                    <div class="slots-container">
+                        <!-- 10 slots -->
+                        <div class="small_slot"><span class="slot-id">A1</span></div>
+                        <div class="small_slot"><span class="slot-id">A2</span></div>
+                        <div class="small_slot"><span class="slot-id">A3</span></div>
+                        <div class="small_slot"><span class="slot-id">A4</span></div>
+                        <div class="small_slot"><span class="slot-id">A5</span></div>
+                        <div class="small_slot"><span class="slot-id">A6</span></div>
+                        <div class="small_slot"><span class="slot-id">A7</span></div>
+                        <div class="small_slot"><span class="slot-id">A8</span></div>
+                        <div class="small_slot"><span class="slot-id">A9</span></div>
+                        <div class="small_slot"><span class="slot-id">A10</span></div>
+                    </div>
+                </div>
+                
+                <div class="driveway"></div>
+
+                <!-- Zone B: Medium -->
+                <div class="parking-zone zone-medium">
+                    <h3>Zone B: Cars (Medium)</h3>
+                    <div class="slots-container">
+                        <!-- 10 slots -->
+                        <div class="medium_slot"><span class="slot-id">B1</span></div>
+                        <div class="medium_slot"><span class="slot-id">B2</span></div>
+                        <div class="medium_slot"><span class="slot-id">B3</span></div>
+                        <div class="medium_slot"><span class="slot-id">B4</span></div>
+                        <div class="medium_slot"><span class="slot-id">B5</span></div>
+                        <div class="medium_slot"><span class="slot-id">B6</span></div>
+                        <div class="medium_slot"><span class="slot-id">B7</span></div>
+                        <div class="medium_slot"><span class="slot-id">B8</span></div>
+                        <div class="medium_slot"><span class="slot-id">B9</span></div>
+                        <div class="medium_slot"><span class="slot-id">B10</span></div>
+                    </div>
+                </div>
+
+                <div class="driveway"></div>
+
+                <!-- Zone C: Large -->
+                <div class="parking-zone zone-large">
+                    <h3>Zone C: SUVs (Large)</h3>
+                    <div class="slots-container">
+                        <!-- 10 slots -->
+                        <div class="large_slot"><span class="slot-id">C1</span></div>
+                        <div class="large_slot"><span class="slot-id">C2</span></div>
+                        <div class="large_slot"><span class="slot-id">C3</span></div>
+                        <div class="large_slot"><span class="slot-id">C4</span></div>
+                        <div class="large_slot"><span class="slot-id">C5</span></div>
+                        <div class="large_slot"><span class="slot-id">C6</span></div>
+                        <div class="large_slot"><span class="slot-id">C7</span></div>
+                        <div class="large_slot"><span class="slot-id">C8</span></div>
+                        <div class="large_slot"><span class="slot-id">C9</span></div>
+                        <div class="large_slot"><span class="slot-id">C10</span></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
