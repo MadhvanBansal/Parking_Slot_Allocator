@@ -21,8 +21,12 @@
                 <div class="vehicle-entry">
                     <h2>Vehicle Entry</h2>
                     <div class="input-group">
-                        <label for="vehicleSize">Vehicle Size:</label>
-                        <select id="vehicleSize">
+                        <label for="plate_number">License Plate:</label>
+                        <input type="text" id="plate_number" placeholder="e.g., DL 8C 1234" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: rgba(255, 255, 255, 0.9);">
+                    </div>
+                    <div class="input-group">
+                        <label for="vehicle_size">Vehicle Size:</label>
+                        <select id="vehicle_size">
                             <option value="small">Small (Bike)</option>
                             <option value="medium">Medium (Car)</option>
                             <option value="large">Large (SUV)</option>
@@ -34,14 +38,23 @@
                             <option value="best-fit">Best-Fit</option>
                         </select>
                     </div>
-                    <button class="btn-park">Assign Slot</button>
+                    <button class="park_btn">Park Vehicle</button>
+                    
+                    <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                        <h3 style="font-size: 14px; margin: 0 0 10px 0; color: #fff;">Exit Vehicle</h3>
+                        <div class="input-group">
+                            <label for="exit_slot_id">Slot ID (e.g., A1):</label>
+                            <input type="text" id="exit_slot_id" placeholder="A1" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: rgba(255, 255, 255, 0.9); text-transform: uppercase;">
+                        </div>
+                        <button class="exit_btn" style="width: 100%; padding: 12px; background-color: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Exit Vehicle</button>
+                    </div>
                 </div>
                 
                 <div class="algo-status">
                     <h2>Algorithm Status</h2>
-                    <div class="status-display">
+                    <div class="status_display">
                         <p>Status: Ready for next vehicle.</p>
-                        <p class="thinking-text">[ Algorithm is idle... ]</p>
+                        <p class="processing_text">[ Algorithm is idle... ]</p>
                     </div>
                 </div>
             </div>
@@ -117,5 +130,6 @@
             </div>
         </main>
     </div>
+    <script src="script.js"></script>
 </body>
 </html>
