@@ -50,8 +50,6 @@ DESC Bookings;
 
 DESC Fragmentation_Log;
  
- USE parking_system;
-
 ALTER TABLE Slots
     ADD COLUMN zone ENUM('small', 'medium', 'large') NOT NULL AFTER size,
     ADD COLUMN slot_label VARCHAR(5) NOT NULL UNIQUE AFTER zone;
