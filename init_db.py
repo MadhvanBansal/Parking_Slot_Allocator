@@ -52,7 +52,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database initialized successfully with 30 parking slots mapped to A1-C10!")
+    print("Database initialized successfully with 30 parking slots mapped to A1 <-> C10")
 
 if __name__ == '__main__':
     init_db()
