@@ -46,13 +46,13 @@ def init_db():
     for i in range(1, 11):
         cursor.execute("INSERT INTO Slots (slot_id, size, position) VALUES (?, ?, ?)", (f'B{i}', 2, i))
         
-    # Zone C (Size 3) - SUVs
+    # Zone C (Size 3) - SUVs / Large Vehicles
     for i in range(1, 11):
         cursor.execute("INSERT INTO Slots (slot_id, size, position) VALUES (?, ?, ?)", (f'C{i}', 3, i))
 
     conn.commit()
     conn.close()
-    print("Database initialized successfully with 30 parking slots mapped to A1-C10!")
+    print("Database initialized successfully with 30 parking slots mapped to A1 <-> C10")
 
 if __name__ == '__main__':
     init_db()
