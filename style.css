@@ -1,3 +1,4 @@
+
 /* ===================================
    Parking Allocator - CSS
    =================================== */
@@ -16,7 +17,11 @@
     --font: 'Inter', sans-serif;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 body {
     font-family: var(--font);
@@ -36,6 +41,7 @@ body {
 /* ===================================
    Sidebar - left panel
    =================================== */
+
 .dashboard {
     width: 260px;
     min-width: 260px;
@@ -62,7 +68,10 @@ body {
 }
 
 /* ---- Section cards ---- */
-.vehicle-entry, .vehicle-exit, .legend {
+
+.vehicle-entry,
+.vehicle-exit,
+.legend {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -104,9 +113,13 @@ body {
     outline: none;
 }
 
+/* Improved focus effect for form fields */
 .input-group input:focus,
 .input-group select:focus {
     border-color: var(--green);
+    box-shadow: 0 0 0 2px rgba(48, 209, 88, 0.15);
+    transition: box-shadow 0.2s ease,
+                border-color 0.2s ease;
 }
 
 .input-group input {
@@ -114,7 +127,9 @@ body {
 }
 
 /* ---- Buttons ---- */
-.park_btn, .exit_btn {
+
+.park_btn,
+.exit_btn {
     width: 100%;
     padding: 9px;
     border: none;
@@ -126,11 +141,24 @@ body {
     margin-top: 4px;
     transition: opacity 0.2s;
 }
-.park_btn { background: var(--green); color: #000; }
-.exit_btn { background: var(--red);   color: #fff; }
-.park_btn:hover, .exit_btn:hover { opacity: 0.85; }
+
+.park_btn {
+    background: var(--green);
+    color: #000;
+}
+
+.exit_btn {
+    background: var(--red);
+    color: #fff;
+}
+
+.park_btn:hover,
+.exit_btn:hover {
+    opacity: 0.85;
+}
 
 /* Status message (errors only) */
+
 .status-msg {
     font-size: 11px;
     margin-top: 6px;
@@ -141,6 +169,7 @@ body {
 /* ===================================
    Legend - color key
    =================================== */
+
 .legend-items {
     display: flex;
     flex-direction: column;
@@ -166,9 +195,24 @@ body {
     font-weight: 700;
     flex-shrink: 0;
 }
-.badge-s { background: rgba(48,209,88,0.15);  color: var(--green);  border: 1px solid rgba(48,209,88,0.4); }
-.badge-m { background: rgba(10,132,255,0.15); color: var(--blue);   border: 1px solid rgba(10,132,255,0.4); }
-.badge-l { background: rgba(191,90,242,0.15); color: var(--purple); border: 1px solid rgba(191,90,242,0.4); }
+
+.badge-s {
+    background: rgba(48, 209, 88, 0.15);
+    color: var(--green);
+    border: 1px solid rgba(48, 209, 88, 0.4);
+}
+
+.badge-m {
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--blue);
+    border: 1px solid rgba(10, 132, 255, 0.4);
+}
+
+.badge-l {
+    background: rgba(191, 90, 242, 0.15);
+    color: var(--purple);
+    border: 1px solid rgba(191, 90, 242, 0.4);
+}
 
 .dot {
     width: 10px;
@@ -176,13 +220,23 @@ body {
     border-radius: 50%;
     flex-shrink: 0;
 }
-.dot-free  { background: var(--green); }
-.dot-occ   { background: var(--red); }
-.dot-last  { background: var(--yellow); }
+
+.dot-free {
+    background: var(--green);
+}
+
+.dot-occ {
+    background: var(--red);
+}
+
+.dot-last {
+    background: var(--yellow);
+}
 
 /* ===================================
    Main parking lot view
    =================================== */
+
 .parking-lot-view {
     flex: 1;
     overflow-y: auto;
@@ -194,6 +248,7 @@ body {
 }
 
 /* ---- Entry sign ---- */
+
 .road-entrance {
     width: 100%;
     max-width: 860px;
@@ -208,6 +263,7 @@ body {
     border: 1px dashed var(--yellow);
     border-radius: 6px;
 }
+
 .entry-sign span {
     font-size: 11px;
     font-weight: 700;
@@ -228,8 +284,9 @@ body {
 }
 
 /* ===================================
-   Zones aur slots
+   Parking zones and slots
    =================================== */
+
 .parking-lot {
     width: 100%;
     max-width: 860px;
@@ -265,10 +322,13 @@ body {
     height: 30px;
     position: relative;
 }
+
 .driveway::after {
     content: '';
     position: absolute;
-    top: 50%; left: 0; right: 0;
+    top: 50%;
+    left: 0;
+    right: 0;
     height: 1px;
     background: repeating-linear-gradient(
         to right,
@@ -278,8 +338,9 @@ body {
 }
 
 /* ===================================
-   Har ek slot
+   Individual parking slots
    =================================== */
+
 .slot {
     position: relative;
     border: 1px solid;
@@ -289,35 +350,42 @@ body {
     justify-content: center;
     border-radius: 5px;
     gap: 4px;
-    transition: box-shadow 0.25s, background 0.25s, border-color 0.25s;
+    transition: box-shadow 0.25s,
+                background 0.25s,
+                border-color 0.25s;
 }
 
 /* Size 1 — Bike */
+
 .slot[data-size="1"] {
     width: 48px;
     height: 72px;
-    background: rgba(48,209,88,0.06);
-    border-color: rgba(48,209,88,0.35);
+    background: rgba(48, 209, 88, 0.06);
+    border-color: rgba(48, 209, 88, 0.35);
 }
+
 /* Size 2 — Car */
+
 .slot[data-size="2"] {
     width: 62px;
     height: 100px;
-    background: rgba(10,132,255,0.06);
-    border-color: rgba(10,132,255,0.35);
+    background: rgba(10, 132, 255, 0.06);
+    border-color: rgba(10, 132, 255, 0.35);
 }
+
 /* Size 3 — SUV */
+
 .slot[data-size="3"] {
     width: 78px;
     height: 130px;
-    background: rgba(191,90,242,0.06);
-    border-color: rgba(191,90,242,0.35);
+    background: rgba(191, 90, 242, 0.06);
+    border-color: rgba(191, 90, 242, 0.35);
 }
 
 .slot-id {
     font-size: 12px;
     font-weight: 600;
-    color: rgba(255,255,255,0.45);
+    color: rgba(255, 255, 255, 0.45);
     line-height: 1;
 }
 
@@ -328,36 +396,78 @@ body {
     border-radius: 3px;
     line-height: 1.4;
 }
-.slot[data-size="1"] .size-badge { color: var(--green);  background: rgba(48,209,88,0.15);  border: 1px solid rgba(48,209,88,0.3); }
-.slot[data-size="2"] .size-badge { color: var(--blue);   background: rgba(10,132,255,0.15); border: 1px solid rgba(10,132,255,0.3); }
-.slot[data-size="3"] .size-badge { color: var(--purple); background: rgba(191,90,242,0.15); border: 1px solid rgba(191,90,242,0.3); }
+
+.slot[data-size="1"] .size-badge {
+    color: var(--green);
+    background: rgba(48, 209, 88, 0.15);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+}
+
+.slot[data-size="2"] .size-badge {
+    color: var(--blue);
+    background: rgba(10, 132, 255, 0.15);
+    border: 1px solid rgba(10, 132, 255, 0.3);
+}
+
+.slot[data-size="3"] .size-badge {
+    color: var(--purple);
+    background: rgba(191, 90, 242, 0.15);
+    border: 1px solid rgba(191, 90, 242, 0.3);
+}
 
 /* Occupied slot */
+
 .slot.occupied {
-    background: rgba(255,69,58,0.12) !important;
-    border-color: rgba(255,69,58,0.5) !important;
+    background: rgba(255, 69, 58, 0.12) !important;
+    border-color: rgba(255, 69, 58, 0.5) !important;
 }
-.slot.occupied .slot-id { color: rgba(255,255,255,0.7); }
+
+.slot.occupied .slot-id {
+    color: rgba(255, 255, 255, 0.7);
+}
+
 .slot.occupied .size-badge {
     color: #ff6b6b !important;
-    background: rgba(255,69,58,0.2) !important;
-    border-color: rgba(255,69,58,0.4) !important;
+    background: rgba(255, 69, 58, 0.2) !important;
+    border-color: rgba(255, 69, 58, 0.4) !important;
 }
 
 /* Last allocated slot highlight */
+
 .slot.last-allocated {
     border-color: var(--yellow) !important;
-    box-shadow: 0 0 0 2px rgba(255,214,10,0.25), 0 0 14px rgba(255,214,10,0.3) !important;
+    box-shadow: 0 0 0 2px rgba(255, 214, 10, 0.25),
+                0 0 14px rgba(255, 214, 10, 0.3) !important;
     animation: pulse-gold 1.4s ease-in-out 3;
 }
+
 @keyframes pulse-gold {
-    0%,100% { box-shadow: 0 0 0 2px rgba(255,214,10,0.2), 0 0 8px rgba(255,214,10,0.2); }
-    50%      { box-shadow: 0 0 0 4px rgba(255,214,10,0.4), 0 0 20px rgba(255,214,10,0.5); }
+    0%, 100% {
+        box-shadow: 0 0 0 2px rgba(255, 214, 10, 0.2),
+                    0 0 8px rgba(255, 214, 10, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(255, 214, 10, 0.4),
+                    0 0 20px rgba(255, 214, 10, 0.5);
+    }
 }
 
 /* Responsive layout */
+
 @media (max-width: 860px) {
-    body { flex-direction: column; height: auto; overflow: auto; }
-    .dashboard { width: 100%; min-width: unset; }
-    .parking-lot-view { overflow: visible; }
+    body {
+        flex-direction: column;
+        height: auto;
+        overflow: auto;
+    }
+
+    .dashboard {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .parking-lot-view {
+        overflow: visible;
+    }
 }
