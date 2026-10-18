@@ -54,8 +54,8 @@ def park_vehicle():
 
         # Best-Fit: find free slot with minimum wasted space
         cur.execute(
-            "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size >= ? ORDER BY (size - ?) ASC, position ASC LIMIT 1",
-            (vsize, vsize)
+            "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size >= ? ORDER BY size ASC, position ASC LIMIT 1",
+            (vsize,)
         )
         chosen = cur.fetchone()
 
