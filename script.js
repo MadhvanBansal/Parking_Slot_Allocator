@@ -2,20 +2,41 @@ const API_BASE = (window.location.hostname === 'localhost')
     ? 'http://localhost:5001'
     : 'http://127.0.0.1:5001';
 
+
 async function syncSlots() {
     try {
         const res = await fetch(`${API_BASE}/api/status`);
         const data = await res.json();
+
         if (data.success) {
-            document.querySelectorAll('.slot').forEach(el => {
+            const occupied = data.occupied_slots || [];
+            const slots = document.querySelectorAll('.slot');
+
+            // Update the visual state of every parking slot
+            slots.forEach(el => {
                 const id = el.querySelector('.slot-id').textContent;
-                el.classList.toggle('occupied', data.occupied_slots.includes(id));
+                el.classList.toggle('occupied', occupied.includes(id));
             });
+
+            // Calculate live parking statistics
+            const total = slots.length;
+            const occupiedCount = slots.filter(
+                el => el.classList.contains('occupied')
+            ).length;
+            const availableCount = total - occupiedCount;
+
+            // Update the dashboard counters
+            document.getElementById('total-slots').textContent = total;
+            document.getElementById('occupied-slots').textContent =
+                occupiedCount;
+            document.getElementById('available-slots').textContent =
+                availableCount;
         }
     } catch (e) {
         console.error('Failed to sync slots:', e);
     }
 }
+
 
 function clearGlow() {
     document.querySelectorAll('.slot.last-allocated')
