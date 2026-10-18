@@ -75,7 +75,7 @@ def park_vehicle():
             cur.execute("INSERT INTO Vehicles (plate_number, size_needed) VALUES (?, ?)", (plate, vsize))
             vid = cur.lastrowid
 
-        # Allocate slot and log booking
+        # Update slot and add booking
         cur.execute("UPDATE Slots SET status = 'occupied' WHERE slot_id = ?", (slot,))
         cur.execute("INSERT INTO Bookings (vehicle_id, slot_id, strategy_used) VALUES (?, ?, ?)", (vid, slot, 'Best-Fit'))
 
