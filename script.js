@@ -3,6 +3,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const parkMsg = document.getElementById('park-status');
     const exitMsg = document.getElementById('exit-status');
 
+    // ---- Page load hone ke baad slots sync karo, aur har 3 second mein dobara ----
+    await syncSlots();
+    setInterval(syncSlots, 3000);
+
     // ---- Error message  ----
     function showError(el, msg) {
         el.textContent = msg;
