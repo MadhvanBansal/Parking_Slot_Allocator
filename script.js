@@ -1,109 +1,112 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const parkButton = document.querySelector('.park_btn');
-    const exitButton = document.querySelector('.exit_btn');
-    const statusText = document.querySelector('.status_display p');
-    const processingText = document.querySelector('.processing_text');
 
-    // HELPER: Sync slots from backend on load
+    const parkMsg = document.getElementById('park-status');
+    const exitMsg = document.getElementById('exit-status');
+
+    // ---- Error message  ----
+    function showError(el, msg) {
+        el.textContent = msg;
+        clearTimeout(el._t);
+        el._t = setTimeout(() => { el.textContent = ''; }, 4000);
+    }
+
+    function clearGlow() {
+        document.querySelectorAll('.slot.last-allocated')
+            .forEach(el => el.classList.remove('last-allocated'));
+    }
+
+    // ---- Backend se sab slots ka status sync karo ----
     async function syncSlots() {
         try {
             const res = await fetch('http://localhost:5001/api/status');
             const data = await res.json();
             if (data.success) {
-                document.querySelectorAll('.slot-id').forEach(slotSpan => {
-                    // Turn on or off the red 'occupied' class depending on database truth
-                    if (data.occupied_slots.includes(slotSpan.textContent)) {
-                        slotSpan.parentElement.classList.add('occupied');
-                    } else {
-                        slotSpan.parentElement.classList.remove('occupied');
-                    }
+                document.querySelectorAll('.slot').forEach(el => {
+                    const id = el.querySelector('.slot-id').textContent;
+                    el.classList.toggle('occupied', data.occupied_slots.includes(id));
                 });
             }
         } catch (e) {
-            console.error("Could not sync slots", e);
+            console.error('Sync nahi hua', e);
         }
     }
 
-    // Instantly sync the UI with the database right when the page loads!
     await syncSlots();
 
-    parkButton.addEventListener('click', async (event) => {
-        event.preventDefault(); // Stop any browser default actions
-        
-        const vehicleSizeString = document.getElementById('vehicle_size').value;
-        const plateNumber = document.getElementById('plate_number').value;
-        
-        if (!plateNumber.trim()) {
-            alert('Please enter a license plate number!');
+    // ---- Park button dabaya ----
+    document.getElementById('park_btn').addEventListener('click', async () => {
+        parkMsg.textContent = '';
+
+        const sizeStr = document.getElementById('vehicle_size').value;
+        const plate = document.getElementById('plate_number').value.trim().toUpperCase();
+
+        if (!plate) {
+            showError(parkMsg, 'Plate number daalo.');
             return;
         }
 
-        let vehicleSizeNumber = 1;
-        if (vehicleSizeString === 'medium') vehicleSizeNumber = 2;
-        if (vehicleSizeString === 'large') vehicleSizeNumber = 3;
-
-        statusText.textContent = "Status: Finding suitable slot...";
-        processingText.textContent = "[ Sending request to backend... ]";
+        let sizeNum = 1;
+        if (sizeStr === 'medium') sizeNum = 2;
+        if (sizeStr === 'large') sizeNum = 3;
 
         try {
-            const backendResponse = await fetch('http://localhost:5001/api/allocate', {
+            const res = await fetch('http://localhost:5001/api/allocate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vehicle_size: vehicleSizeNumber, plate_number: plateNumber })
+                body: JSON.stringify({ vehicle_size: sizeNum, plate_number: plate })
             });
+            const result = await res.json();
 
-            const finalResult = await backendResponse.json();
-
-            if (finalResult.success) {
-                statusText.textContent = `Success: ${finalResult.message}`;
-                processingText.textContent = `[ Best Fit found! Slot ID: ${finalResult.slot.id}, Size: ${finalResult.slot.size} ]`;
-                
-                // Refresh all slots from backend to guarantee it updates perfectly
+            if (result.success) {
                 await syncSlots();
+
+                // Best-Fit wale slot pe golden glow lagao
+                clearGlow();
+                const picked = [...document.querySelectorAll('.slot')]
+                    .find(el => el.querySelector('.slot-id').textContent === result.slot.id);
+                if (picked) picked.classList.add('last-allocated');
+
+                document.getElementById('plate_number').value = '';
+
             } else {
-                statusText.textContent = `Failed: ${finalResult.message}`;
-                processingText.textContent = `[ Error during parking ]`;
+                showError(parkMsg, result.message);
             }
-        } catch (error) {
-            console.error(error);
-            statusText.textContent = "Error: Could not reach backend.";
+
+        } catch (e) {
+            showError(parkMsg, 'Backend se connection nahi hua.');
         }
     });
 
-    exitButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        
-        const exitSlotId = document.getElementById('exit_slot_id').value.toUpperCase();
-        if (!exitSlotId.trim()) {
-            alert('Please enter the Slot ID you want to empty (e.g., A1)!');
+    // ---- Exit button dabaya ----
+    document.getElementById('exit_btn').addEventListener('click', async () => {
+        exitMsg.textContent = '';
+
+        const slot = document.getElementById('exit_slot_id').value.trim().toUpperCase();
+
+        if (!slot) {
+            showError(exitMsg, 'Slot ID daalo (e.g. A1).');
             return;
         }
 
-        statusText.textContent = "Status: Processing vehicle exit...";
-        processingText.textContent = "[ Sending request to backend... ]";
-
         try {
-            const backendResponse = await fetch('http://localhost:5001/api/exit', {
+            const res = await fetch('http://localhost:5001/api/exit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slot_id: exitSlotId })
+                body: JSON.stringify({ slot_id: slot })
             });
+            const result = await res.json();
 
-            const finalResult = await backendResponse.json();
-
-            if (finalResult.success) {
-                statusText.textContent = `Success: ${finalResult.message}`;
-                processingText.textContent = `[ Slot ${finalResult.slot_id} is now free! ]`;
-                
-                // Sync to remove the red color automatically
+            if (result.success) {
+                clearGlow();
                 await syncSlots();
+                document.getElementById('exit_slot_id').value = '';
             } else {
-                statusText.textContent = `Failed: ${finalResult.message}`;
-                processingText.textContent = `[ Exit failed ]`;
+                showError(exitMsg, result.message);
             }
-        } catch (error) {
-            console.error(error);
-            statusText.textContent = "Error: Could not reach backend.";
+
+        } catch (e) {
+            showError(exitMsg, 'Backend se connection nahi hua.');
         }
     });
+
 });

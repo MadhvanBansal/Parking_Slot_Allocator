@@ -1,35 +1,118 @@
-# Smart Parking Slot Allocator
+# Parking Slot Allocator — Best-Fit
 
-## Overview
-The **Smart Parking Slot Allocator** is an interactive application that solves the everyday problem of parking management by applying core concepts from Operating Systems (OS) and Database Management Systems (DBMS). 
-
-Instead of randomly assigning parking spots, this system treats the parking lot like a computer's memory and the arriving vehicles like programs needing memory. It uses classic memory allocation algorithms to decide the most efficient slot for a new car. At the same time, it uses database transactions to handle scenarios where multiple people try to book a spot at the exact same moment, ensuring that double-booking never happens.
-
-## Key Features
-* **Smart Allocation Strategies:** 
-  * **First-Fit:** Assigns the first available slot that is large enough for the vehicle.
-  * **Best-Fit:** Assigns the tightest-fitting available slot to minimize wasted space.
-  * **Worst-Fit:** Assigns the largest available slot to leave a bigger remaining gap for future cars.
-* **Fragmentation Tracking:** Visually tracks and calculates the empty spaces (gaps) left between parked cars, serving as a live demonstration of "external fragmentation".
-* **Concurrency Control:** Safely resolves simultaneous booking requests using database transactions and locking mechanisms. This is a practical solution to the OS "critical section problem".
-* **Live Analytics:** A dashboard that logs booking history and tracks space utilization over time.
-
-## Technology Stack
-* **Frontend (UI):** HTML, CSS, JavaScript (for a live visual grid of the parking lot)
-* **Backend (Logic):** Python with Flask
-* **Database:** SQLite (Lightweight database that perfectly handles our required transactions)
-
-## How It Works
-1. **Arrival:** A user requests a parking slot by entering their vehicle's size.
-2. **Allocation:** The backend engine scans the database and picks the best slot based on the active strategy (First-Fit, Best-Fit, or Worst-Fit).
-3. **Safe Booking:** The system attempts to reserve the slot using a secure database transaction. If another user grabs it first, the system safely retries.
-4. **Departure:** When a car leaves, the slot is marked as free, and the system instantly recalculates the empty gaps.
-
-## Team (Smashers, T104)
-* **Bhavya Jain**
-* **Madhvan Bansal**
-* **Neha Sharma**
-* **Himanshi Negi**
+A smart parking lot management system that uses the **Best-Fit algorithm** to allocate slots to vehicles. Slots are mixed sizes so the algorithm visibly picks the tightest fit instead of just the first available one.
 
 ---
-*(Note: Setup and installation instructions, along with the repository link, will be updated here as development progresses.)*
+
+## How It Works
+
+When a vehicle arrives, the system finds the free slot with the **minimum wasted space** after parking:
+
+```
+waste = slot_size - vehicle_size
+```
+
+The slot with the lowest waste is chosen. This is Best-Fit. First-Fit would just pick the first available slot regardless of size.
+
+---
+
+## Project Structure
+
+```
+├── back.py                      # Flask API server (Best-Fit logic lives here)
+├── init_db.py                   # Run once to create the database and 30 slots
+├── index.html                   # Frontend UI
+├── style.css                    # Styling
+├── script.js                    # Frontend logic (API calls, slot highlight)
+├── requirements.txt             # Python dependencies
+└── parking_system_simulator.sql # SQL schema reference (MySQL version)
+```
+
+---
+
+## Setup & Run
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/MadhvanBansal/Parking_Slot_Allocator.git
+cd Parking_Slot_Allocator
+```
+
+### 2. Create a virtual environment and install dependencies
+
+```bash
+python -m venv venv
+source venv/bin/activate        # Mac/Linux
+venv\Scripts\activate           # Windows
+
+pip install -r requirements.txt
+```
+
+### 3. Initialize the database (run only once)
+
+```bash
+python init_db.py
+```
+
+This creates `parking_system.db` with 30 mixed-size parking slots across 3 zones.
+
+### 4. Start the backend server
+
+```bash
+python back.py
+```
+
+Server runs at `http://localhost:5001`
+
+### 5. Open the frontend
+
+Open `index.html` directly in your browser (no build step needed).
+
+---
+
+## Slot Layout
+
+All 3 zones have mixed slot sizes so Best-Fit can visibly demonstrate choosing the tightest fit:
+
+| Size | Represents | Visual |
+|------|-----------|--------|
+| 1    | Bike      | Small green slot |
+| 2    | Car       | Medium blue slot |
+| 3    | SUV       | Large purple slot |
+
+When a vehicle is parked, the chosen slot gets a **golden glow** — this is visual proof that Best-Fit selected the slot with minimum waste, not just the first available one.
+
+---
+
+## API Endpoints
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/status` | Returns all currently occupied slot IDs |
+| POST | `/api/allocate` | Parks a vehicle using Best-Fit |
+| POST | `/api/exit` | Frees a slot when vehicle leaves |
+
+### Example — Park a vehicle
+
+```bash
+curl -X POST http://localhost:5001/api/allocate \
+  -H "Content-Type: application/json" \
+  -d '{"plate_number": "DL 8C 1234", "vehicle_size": 1}'
+```
+
+### Example — Exit a vehicle
+
+```bash
+curl -X POST http://localhost:5001/api/exit \
+  -H "Content-Type: application/json" \
+  -d '{"slot_id": "A1"}'
+```
+
+---
+
+## Tech Stack
+
+- **Backend:** Python, Flask, Flask-CORS, SQLite
+- **Frontend:** HTML, CSS, Vanilla JavaScript
+- **Algorithm:** Best-Fit (minimize waste = `slot_size - vehicle_size`)
