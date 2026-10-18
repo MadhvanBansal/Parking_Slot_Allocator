@@ -1,7 +1,9 @@
+import os
 import sqlite3
 
 def setup():
-    db = sqlite3.connect('parking_system.db')
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'parking_system.db')
+    db = sqlite3.connect(db_path)
     cur = db.cursor()
 
     cur.execute('DROP TABLE IF EXISTS Bookings')

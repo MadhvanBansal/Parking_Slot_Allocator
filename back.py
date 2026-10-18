@@ -6,7 +6,7 @@ import sqlite3
 app = Flask(__name__)
 CORS(app)
 
-# Database helper
+# Connect to the database
 def connect():
     db = sqlite3.connect('parking_system.db')
     db.row_factory = sqlite3.Row
@@ -168,12 +168,7 @@ def remove_vehicle():
         db = connect()
         cur = db.cursor()
 
-        cur.execute("""
-            SELECT booking_id
-            FROM Bookings
-            WHERE slot_id = ? AND end_time IS NULL
-        """, (slot,))
-
+        cur.execute("SELECT booking_id FROM Bookings WHERE slot_id = ? AND end_time IS NULL", (slot,))
         booking = cur.fetchone()
 
         if not booking:

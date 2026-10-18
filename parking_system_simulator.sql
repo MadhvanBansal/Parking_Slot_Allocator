@@ -26,5 +26,5 @@ CREATE TABLE Bookings (
     slot_id INT NOT NULL,
     strategy_used ENUM('Best-Fit') NOT NULL,
     start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    end_time DATETIME NULL
+    end_time DATETIME 
 );
