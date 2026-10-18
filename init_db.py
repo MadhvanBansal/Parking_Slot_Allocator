@@ -54,7 +54,7 @@ def setup():
 
     db.commit()
     db.close()
-    print("Database ready! 30 mixed-size slots ban gaye.")
+    print("Database ready with 30 parking slots.")
 
 
 if __name__ == '__main__':

@@ -332,7 +332,7 @@ body {
 .slot[data-size="2"] .size-badge { color: var(--blue);   background: rgba(10,132,255,0.15); border: 1px solid rgba(10,132,255,0.3); }
 .slot[data-size="3"] .size-badge { color: var(--purple); background: rgba(191,90,242,0.15); border: 1px solid rgba(191,90,242,0.3); }
 
-/* ---- Slot occupied ho gaya ---- */
+/* Occupied slot */
 .slot.occupied {
     background: rgba(255,69,58,0.12) !important;
     border-color: rgba(255,69,58,0.5) !important;
@@ -344,7 +344,7 @@ body {
     border-color: rgba(255,69,58,0.4) !important;
 }
 
-/* ---- Best-Fit ne jo slot choose kiya uska golden glow ---- */
+/* Last allocated slot highlight */
 .slot.last-allocated {
     border-color: var(--yellow) !important;
     box-shadow: 0 0 0 2px rgba(255,214,10,0.25), 0 0 14px rgba(255,214,10,0.3) !important;
@@ -355,9 +355,7 @@ body {
     50%      { box-shadow: 0 0 0 4px rgba(255,214,10,0.4), 0 0 20px rgba(255,214,10,0.5); }
 }
 
-/* ===================================
-   Mobile ke liye responsive
-   =================================== */
+/* Responsive layout */
 @media (max-width: 860px) {
     body { flex-direction: column; height: auto; overflow: auto; }
     .dashboard { width: 100%; min-width: unset; }
