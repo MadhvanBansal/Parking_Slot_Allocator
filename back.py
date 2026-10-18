@@ -5,14 +5,14 @@ import sqlite3
 app = Flask(__name__)
 CORS(app)
 
-# ---- Database se connection lena ----
+# Database helper
 def connect():
     db = sqlite3.connect('parking_system.db')
     db.row_factory = sqlite3.Row
     return db
 
 
-# ---- Saare occupied slots frontend ko bhejo ----
+# Get occupied slots
 @app.route('/api/status', methods=['GET'])
 def get_status():
     try:
@@ -28,7 +28,7 @@ def get_status():
             db.close()
 
 
-# ---- Vehicle park karo - Best-Fit algorithm use karke ----
+# Park vehicle using Best-Fit
 @app.route('/api/allocate', methods=['POST'])
 def park_vehicle():
     data = request.json
@@ -36,13 +36,13 @@ def park_vehicle():
     plate = data.get('plate_number')
 
     if not plate or not vsize:
-        return jsonify({"success": False, "message": "Plate number ya size missing hai"}), 400
+        return jsonify({"success": False, "message": "License plate or vehicle size is missing"}), 400
 
     try:
         db = connect()
         cur = db.cursor()
 
-        # Gaadi pehle se parked toh nahi check karo
+        # Check if vehicle is already parked
         cur.execute('''
             SELECT b.slot_id FROM Bookings b
             JOIN Vehicles v ON b.vehicle_id = v.vehicle_id
@@ -50,9 +50,9 @@ def park_vehicle():
         ''', (plate,))
         already_parked = cur.fetchone()
         if already_parked:
-            return jsonify({"success": False, "message": f"Gaadi pehle se slot {already_parked['slot_id']} mein hai"}), 400
+            return jsonify({"success": False, "message": f"Vehicle is already parked in slot {already_parked['slot_id']}"}), 400
 
-        # Best-Fit: sabse kam waste wala free slot dhundho
+        # Best-Fit: find free slot with minimum wasted space
         cur.execute(
             "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size >= ? ORDER BY (size - ?) ASC, position ASC LIMIT 1",
             (vsize, vsize)
@@ -60,12 +60,12 @@ def park_vehicle():
         chosen = cur.fetchone()
 
         if not chosen:
-            return jsonify({"success": False, "message": "Koi bhi slot available nahi hai"}), 404
+            return jsonify({"success": False, "message": "No suitable slot available"}), 404
 
         slot = chosen['slot_id']
         slot_size = chosen['size']
 
-        # Purani gaadi hai ya nayi - check karo
+        # Check or register vehicle
         cur.execute("SELECT vehicle_id FROM Vehicles WHERE plate_number = ?", (plate,))
         old = cur.fetchone()
 
@@ -75,12 +75,12 @@ def park_vehicle():
             cur.execute("INSERT INTO Vehicles (plate_number, size_needed) VALUES (?, ?)", (plate, vsize))
             vid = cur.lastrowid
 
-        # Slot occupy karo aur booking record daalo
+        # Allocate slot and log booking
         cur.execute("UPDATE Slots SET status = 'occupied' WHERE slot_id = ?", (slot,))
         cur.execute("INSERT INTO Bookings (vehicle_id, slot_id, strategy_used) VALUES (?, ?, ?)", (vid, slot, 'Best-Fit'))
 
         db.commit()
-        return jsonify({"success": True, "message": "Gaadi park ho gayi", "slot": {"id": slot, "size": slot_size}}), 200
+        return jsonify({"success": True, "message": "Vehicle parked successfully", "slot": {"id": slot, "size": slot_size}}), 200
 
     except sqlite3.Error as e:
         return jsonify({"success": False, "message": "Database error"}), 500
@@ -89,14 +89,14 @@ def park_vehicle():
             db.close()
 
 
-# ---- Vehicle nikalo aur slot free karo ----
+# Exit vehicle and free slot
 @app.route('/api/exit', methods=['POST'])
 def remove_vehicle():
     data = request.json
     slot = data.get('slot_id')
 
     if not slot:
-        return jsonify({"success": False, "message": "Slot ID missing hai"}), 400
+        return jsonify({"success": False, "message": "Slot ID is missing"}), 400
 
     try:
         db = connect()
@@ -109,13 +109,13 @@ def remove_vehicle():
         booking = cur.fetchone()
 
         if not booking:
-            return jsonify({"success": False, "message": f"Slot {slot} mein koi gaadi nahi hai"}), 404
+            return jsonify({"success": False, "message": f"Slot {slot} is not currently occupied"}), 404
 
         cur.execute("UPDATE Slots SET status = 'free' WHERE slot_id = ?", (slot,))
         cur.execute("UPDATE Bookings SET end_time = CURRENT_TIMESTAMP WHERE booking_id = ?", (booking['booking_id'],))
 
         db.commit()
-        return jsonify({"success": True, "message": "Gaadi nikal gayi", "slot_id": slot}), 200
+        return jsonify({"success": True, "message": "Vehicle exited successfully", "slot_id": slot}), 200
 
     except sqlite3.Error as e:
         return jsonify({"success": False, "message": "Database error"}), 500
@@ -124,6 +124,5 @@ def remove_vehicle():
             db.close()
 
 
-# ---- Server start karo ----
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5001)
