@@ -5,7 +5,7 @@ import sqlite3
 app = Flask(__name__)
 CORS(app)
 
-# Database helper
+# Connect to the database
 def connect():
     db = sqlite3.connect('parking_system.db')
     db.row_factory = sqlite3.Row
@@ -54,8 +54,8 @@ def park_vehicle():
 
         # Best-Fit: find free slot with minimum wasted space
         cur.execute(
-            "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size >= ? ORDER BY (size - ?) ASC, position ASC LIMIT 1",
-            (vsize, vsize)
+            "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size >= ? ORDER BY size ASC, position ASC LIMIT 1",
+            (vsize,)
         )
         chosen = cur.fetchone()
 
@@ -75,7 +75,7 @@ def park_vehicle():
             cur.execute("INSERT INTO Vehicles (plate_number, size_needed) VALUES (?, ?)", (plate, vsize))
             vid = cur.lastrowid
 
-        # Allocate slot and log booking
+        # Update slot and add booking
         cur.execute("UPDATE Slots SET status = 'occupied' WHERE slot_id = ?", (slot,))
         cur.execute("INSERT INTO Bookings (vehicle_id, slot_id) VALUES (?, ?)", (vid, slot))
 
@@ -102,10 +102,7 @@ def remove_vehicle():
         db = connect()
         cur = db.cursor()
 
-        cur.execute('''
-            SELECT booking_id FROM Bookings
-            WHERE slot_id = ? AND end_time IS NULL
-        ''', (slot,))
+        cur.execute("SELECT booking_id FROM Bookings WHERE slot_id = ? AND end_time IS NULL", (slot,))
         booking = cur.fetchone()
 
         if not booking:
