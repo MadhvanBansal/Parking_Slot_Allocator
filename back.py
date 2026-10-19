@@ -77,7 +77,7 @@ def park_vehicle():
 
         # Allocate slot and log booking
         cur.execute("UPDATE Slots SET status = 'occupied' WHERE slot_id = ?", (slot,))
-        cur.execute("INSERT INTO Bookings (vehicle_id, slot_id, strategy_used) VALUES (?, ?, ?)", (vid, slot, 'Best-Fit'))
+        cur.execute("INSERT INTO Bookings (vehicle_id, slot_id) VALUES (?, ?)", (vid, slot))
 
         db.commit()
         return jsonify({"success": True, "message": "Vehicle parked successfully", "slot": {"id": slot, "size": slot_size}}), 200

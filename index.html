@@ -16,7 +16,7 @@
         <!-- Sidebar -->
         <aside class="dashboard">
             <header>
-                <h1>🅿 Parking Lot</h1>
+                <h1>Parking Lot</h1>
                 <p class="subtitle">Best-Fit Allocator</p>
             </header>
 
@@ -37,12 +37,6 @@
                             <option value="large">Large — SUV (Size 3)</option>
                         </select>
                     </div>
-                    <div class="input-group">
-                        <label for="algoStrategy">Strategy</label>
-                        <select id="algoStrategy">
-                            <option value="best-fit">Best-Fit</option>
-                        </select>
-                    </div>
                     <button class="park_btn" id="park_btn">Park Vehicle</button>
                     <p class="status-msg" id="park-status"></p>
                 </div>
@@ -60,7 +54,7 @@
 
                 <!-- Legend -->
                 <div class="legend">
-                    <h3>Legend</h3>
+                    <h3>Markings</h3>
                     <div class="legend-items">
                         <div class="legend-item"><span class="badge badge-s">S</span> Size 1 — Bike</div>
                         <div class="legend-item"><span class="badge badge-m">M</span> Size 2 — Car</div>
@@ -69,7 +63,6 @@
                     <div class="legend-items" style="margin-top: 10px;">
                         <div class="legend-item"><span class="dot dot-free"></span> Free</div>
                         <div class="legend-item"><span class="dot dot-occ"></span> Occupied</div>
-                        <div class="legend-item"><span class="dot dot-last"></span> Best-Fit pick</div>
                     </div>
                 </div>
 
@@ -90,16 +83,26 @@
                 <div class="parking-zone">
                     <h3>Zone A — Mixed Sizes</h3>
                     <div class="slots-container">
-                        <div class="slot" data-size="1"><span class="slot-id">A1</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">A2</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">A3</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">A4</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">A5</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">A6</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">A7</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">A8</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">A9</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">A10</span><span class="size-badge">L</span></div>
+                        <div class="slot" data-size="1"><span class="slot-id">A1</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">A2</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">A3</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">A4</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">A5</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">A6</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">A7</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">A8</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">A9</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">A10</span><span
+                                class="size-badge">L</span></div>
                     </div>
                 </div>
 
@@ -109,16 +112,26 @@
                 <div class="parking-zone">
                     <h3>Zone B — Mixed Sizes</h3>
                     <div class="slots-container">
-                        <div class="slot" data-size="2"><span class="slot-id">B1</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">B2</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">B3</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">B4</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">B5</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">B6</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">B7</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">B8</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">B9</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">B10</span><span class="size-badge">M</span></div>
+                        <div class="slot" data-size="2"><span class="slot-id">B1</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">B2</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">B3</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">B4</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">B5</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">B6</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">B7</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">B8</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">B9</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">B10</span><span
+                                class="size-badge">M</span></div>
                     </div>
                 </div>
 
@@ -128,16 +141,26 @@
                 <div class="parking-zone">
                     <h3>Zone C — Mixed Sizes</h3>
                     <div class="slots-container">
-                        <div class="slot" data-size="3"><span class="slot-id">C1</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">C2</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">C3</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">C4</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">C5</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">C6</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">C7</span><span class="size-badge">L</span></div>
-                        <div class="slot" data-size="2"><span class="slot-id">C8</span><span class="size-badge">M</span></div>
-                        <div class="slot" data-size="1"><span class="slot-id">C9</span><span class="size-badge">S</span></div>
-                        <div class="slot" data-size="3"><span class="slot-id">C10</span><span class="size-badge">L</span></div>
+                        <div class="slot" data-size="3"><span class="slot-id">C1</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">C2</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">C3</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">C4</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">C5</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">C6</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">C7</span><span class="size-badge">L</span>
+                        </div>
+                        <div class="slot" data-size="2"><span class="slot-id">C8</span><span class="size-badge">M</span>
+                        </div>
+                        <div class="slot" data-size="1"><span class="slot-id">C9</span><span class="size-badge">S</span>
+                        </div>
+                        <div class="slot" data-size="3"><span class="slot-id">C10</span><span
+                                class="size-badge">L</span></div>
                     </div>
                 </div>
 

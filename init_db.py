@@ -30,7 +30,6 @@ def setup():
         booking_id    INTEGER PRIMARY KEY AUTOINCREMENT,
         vehicle_id    INT NOT NULL,
         slot_id       VARCHAR(10) NOT NULL,
-        strategy_used VARCHAR(20) NOT NULL,
         start_time    DATETIME DEFAULT CURRENT_TIMESTAMP,
         end_time      DATETIME NULL
     )

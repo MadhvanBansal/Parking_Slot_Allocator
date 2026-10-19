@@ -24,7 +24,6 @@ CREATE TABLE Bookings (
     booking_id INT AUTO_INCREMENT PRIMARY KEY,
     vehicle_id INT NOT NULL,
     slot_id INT NOT NULL,
-    strategy_used ENUM('Best-Fit') NOT NULL,
     start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     end_time DATETIME NULL
 );

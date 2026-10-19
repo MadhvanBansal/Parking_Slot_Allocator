@@ -17,11 +17,6 @@ async function syncSlots() {
     }
 }
 
-function clearGlow() {
-    document.querySelectorAll('.slot.last-allocated')
-        .forEach(el => el.classList.remove('last-allocated'));
-}
-
 function showError(el, msg) {
     el.textContent = msg;
     clearTimeout(el._t);
@@ -62,11 +57,6 @@ function init() {
 
             if (result.success) {
                 await syncSlots();
-                clearGlow();
-                const picked = [...document.querySelectorAll('.slot')]
-                    .find(el => el.querySelector('.slot-id').textContent === result.slot.id);
-                if (picked) picked.classList.add('last-allocated');
-
                 document.getElementById('plate_number').value = '';
             } else {
                 showError(parkMsg, result.message);
@@ -96,7 +86,6 @@ function init() {
             const result = await res.json();
 
             if (result.success) {
-                clearGlow();
                 await syncSlots();
                 document.getElementById('exit_slot_id').value = '';
             } else {
