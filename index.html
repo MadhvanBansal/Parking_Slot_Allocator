@@ -4,165 +4,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Parking Allocator</title>
-    <meta name="description" content="Parking slot allocator using Best-Fit algorithm.">
+    <title>Parking Lot Management System</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <div class="app-container">
+    <div class="app-layout">
 
-        <!-- Sidebar -->
-        <aside class="dashboard">
-            <header>
-                <h1>Parking Lot</h1>
-                <p class="subtitle">Best-Fit Allocator</p>
-            </header>
+        <!-- Control Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <h1>Parking Manager</h1>
+                <p class="brand-subtitle">Buddy System & ML Allocator</p>
+            </div>
 
-            <div class="control-panel">
-
-                <!-- Entry -->
-                <div class="vehicle-entry">
-                    <h2>Vehicle Entry</h2>
-                    <div class="input-group">
+            <!-- Vehicle Entry Form -->
+            <section class="panel">
+                <h2 class="panel-title">Vehicle Entry</h2>
+                <form id="entry_form" onsubmit="return false;">
+                    <div class="form-group">
                         <label for="plate_number">License Plate</label>
-                        <input type="text" id="plate_number" placeholder="e.g. DL 8C 1234">
+                        <input type="text" id="plate_number" placeholder="DL 8C 1234" autocomplete="off" required>
                     </div>
-                    <div class="input-group">
+
+                    <div class="form-group">
                         <label for="vehicle_size">Vehicle Size</label>
                         <select id="vehicle_size">
-                            <option value="small">Small — Bike (Size 1)</option>
-                            <option value="medium">Medium — Car (Size 2)</option>
-                            <option value="large">Large — SUV (Size 3)</option>
+                            <option value="small">Bike (Size 1 &mdash; 1 Bay)</option>
+                            <option value="medium" selected>Car (Size 2 &mdash; 2 Bays)</option>
+                            <option value="large">SUV (Size 3 &mdash; 4 Bays)</option>
                         </select>
                     </div>
-                    <button class="park_btn" id="park_btn">Park Vehicle</button>
-                    <p class="status-msg" id="park-status"></p>
-                </div>
 
-                <!-- Exit -->
-                <div class="vehicle-exit">
-                    <h2>Vehicle Exit</h2>
-                    <div class="input-group">
+                    <div class="form-group">
+                        <label for="algo_select">Allocation Algorithm</label>
+                        <select id="algo_select">
+                            <option value="ML Model" selected>ML Model (Adaptive)</option>
+                            <option value="Best-Fit">Best-Fit (Min Waste)</option>
+                            <option value="First-Fit">First-Fit (First Open)</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" id="park_btn">Park Vehicle</button>
+                    <p class="status-message" id="park-status" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <!-- Vehicle Exit Form -->
+            <section class="panel">
+                <h2 class="panel-title">Vehicle Exit</h2>
+                <form id="exit_form" onsubmit="return false;">
+                    <div class="form-group">
                         <label for="exit_slot_id">Slot ID</label>
-                        <input type="text" id="exit_slot_id" placeholder="e.g. A1">
+                        <input type="text" id="exit_slot_id" placeholder="A1 or B1.1" autocomplete="off" required>
                     </div>
-                    <button class="exit_btn" id="exit_btn">Exit Vehicle</button>
-                    <p class="status-msg" id="exit-status"></p>
+
+                    <button type="button" class="btn btn-danger" id="exit_btn">Exit Vehicle</button>
+                    <p class="status-message" id="exit-status" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <!-- Markings & Legend -->
+            <section class="panel legend-panel">
+                <h2 class="panel-title">Slot Types</h2>
+                <div class="legend-list">
+                    <div class="legend-row">
+                        <span class="type-pill pill-small">S</span>
+                        <span>Size 1 &mdash; Bike (1 Bay)</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="type-pill pill-medium">M</span>
+                        <span>Size 2 &mdash; Car (2 Bays)</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="type-pill pill-large">L</span>
+                        <span>Size 3 &mdash; SUV (4 Bays)</span>
+                    </div>
                 </div>
 
-                <!-- Legend -->
-                <div class="legend">
-                    <h3>Markings</h3>
-                    <div class="legend-items">
-                        <div class="legend-item"><span class="badge badge-s">S</span> Size 1 — Bike</div>
-                        <div class="legend-item"><span class="badge badge-m">M</span> Size 2 — Car</div>
-                        <div class="legend-item"><span class="badge badge-l">L</span> Size 3 — SUV</div>
+                <div class="status-legend">
+                    <div class="status-indicator">
+                        <span class="status-dot dot-free"></span>
+                        <span>Available</span>
                     </div>
-                    <div class="legend-items" style="margin-top: 10px;">
-                        <div class="legend-item"><span class="dot dot-free"></span> Free</div>
-                        <div class="legend-item"><span class="dot dot-occ"></span> Occupied</div>
+                    <div class="status-indicator">
+                        <span class="status-dot dot-occupied"></span>
+                        <span>Occupied</span>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot dot-split"></span>
+                        <span>Buddy Split</span>
                     </div>
                 </div>
-
-            </div>
+            </section>
         </aside>
 
-        <!-- Parking Lot -->
-        <main class="parking-lot-view">
+        <!-- Parking Lot Grid View -->
+        <main class="main-content">
+            <header class="content-header">
+                <div>
+                    <h2>Parking Lot Overview</h2>
+                    <p class="header-description">30 slots across Zones A, B, and C with dynamic Buddy System splitting</p>
+                </div>
+                <div class="header-stats" id="lot_stats">
+                    <span class="stat-pill"><strong id="stat_occupied">0</strong> Occupied</span>
+                    <span class="stat-pill"><strong id="stat_available">30</strong> Available</span>
+                </div>
+            </header>
 
-            <div class="road-entrance">
-                <div class="entry-sign"><span>ENTRY</span></div>
-                <div class="road-lines"></div>
-            </div>
-
-            <div class="parking-lot">
+            <div class="zones-container">
 
                 <!-- Zone A -->
-                <div class="parking-zone">
-                    <h3>Zone A — Mixed Sizes</h3>
-                    <div class="slots-container">
-                        <div class="slot" data-size="1"><span class="slot-id">A1</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">A2</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">A3</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">A4</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">A5</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">A6</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">A7</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">A8</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">A9</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">A10</span><span
-                                class="size-badge">L</span></div>
+                <section class="zone-block" aria-labelledby="zone-a-title">
+                    <div class="zone-header">
+                        <h3 id="zone-a-title">Zone A</h3>
+                        <span class="zone-slots-label">Positions 1 &ndash; 10</span>
                     </div>
-                </div>
+                    <div class="slots-grid">
+                        <div class="slot" data-slot="A1" data-size="1"><span class="slot-name">A1</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="A2" data-size="3"><span class="slot-name">A2</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="A3" data-size="1"><span class="slot-name">A3</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="A4" data-size="2"><span class="slot-name">A4</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="A5" data-size="1"><span class="slot-name">A5</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="A6" data-size="2"><span class="slot-name">A6</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="A7" data-size="3"><span class="slot-name">A7</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="A8" data-size="1"><span class="slot-name">A8</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="A9" data-size="2"><span class="slot-name">A9</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="A10" data-size="3"><span class="slot-name">A10</span><span class="type-pill pill-large">L</span></div>
+                    </div>
+                </section>
 
-                <div class="driveway"></div>
+                <div class="driveway-separator" aria-hidden="true"></div>
 
                 <!-- Zone B -->
-                <div class="parking-zone">
-                    <h3>Zone B — Mixed Sizes</h3>
-                    <div class="slots-container">
-                        <div class="slot" data-size="2"><span class="slot-id">B1</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">B2</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">B3</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">B4</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">B5</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">B6</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">B7</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">B8</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">B9</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">B10</span><span
-                                class="size-badge">M</span></div>
+                <section class="zone-block" aria-labelledby="zone-b-title">
+                    <div class="zone-header">
+                        <h3 id="zone-b-title">Zone B</h3>
+                        <span class="zone-slots-label">Positions 11 &ndash; 20</span>
                     </div>
-                </div>
+                    <div class="slots-grid">
+                        <div class="slot" data-slot="B1" data-size="2"><span class="slot-name">B1</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="B2" data-size="1"><span class="slot-name">B2</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="B3" data-size="3"><span class="slot-name">B3</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="B4" data-size="2"><span class="slot-name">B4</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="B5" data-size="1"><span class="slot-name">B5</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="B6" data-size="3"><span class="slot-name">B6</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="B7" data-size="2"><span class="slot-name">B7</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="B8" data-size="1"><span class="slot-name">B8</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="B9" data-size="3"><span class="slot-name">B9</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="B10" data-size="2"><span class="slot-name">B10</span><span class="type-pill pill-medium">M</span></div>
+                    </div>
+                </section>
 
-                <div class="driveway"></div>
+                <div class="driveway-separator" aria-hidden="true"></div>
 
                 <!-- Zone C -->
-                <div class="parking-zone">
-                    <h3>Zone C — Mixed Sizes</h3>
-                    <div class="slots-container">
-                        <div class="slot" data-size="3"><span class="slot-id">C1</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">C2</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">C3</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">C4</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">C5</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">C6</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">C7</span><span class="size-badge">L</span>
-                        </div>
-                        <div class="slot" data-size="2"><span class="slot-id">C8</span><span class="size-badge">M</span>
-                        </div>
-                        <div class="slot" data-size="1"><span class="slot-id">C9</span><span class="size-badge">S</span>
-                        </div>
-                        <div class="slot" data-size="3"><span class="slot-id">C10</span><span
-                                class="size-badge">L</span></div>
+                <section class="zone-block" aria-labelledby="zone-c-title">
+                    <div class="zone-header">
+                        <h3 id="zone-c-title">Zone C</h3>
+                        <span class="zone-slots-label">Positions 21 &ndash; 30</span>
                     </div>
-                </div>
+                    <div class="slots-grid">
+                        <div class="slot" data-slot="C1" data-size="3"><span class="slot-name">C1</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="C2" data-size="2"><span class="slot-name">C2</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="C3" data-size="1"><span class="slot-name">C3</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="C4" data-size="3"><span class="slot-name">C4</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="C5" data-size="2"><span class="slot-name">C5</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="C6" data-size="1"><span class="slot-name">C6</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="C7" data-size="3"><span class="slot-name">C7</span><span class="type-pill pill-large">L</span></div>
+                        <div class="slot" data-slot="C8" data-size="2"><span class="slot-name">C8</span><span class="type-pill pill-medium">M</span></div>
+                        <div class="slot" data-slot="C9" data-size="1"><span class="slot-name">C9</span><span class="type-pill pill-small">S</span></div>
+                        <div class="slot" data-slot="C10" data-size="3"><span class="slot-name">C10</span><span class="type-pill pill-large">L</span></div>
+                    </div>
+                </section>
 
             </div>
         </main>

@@ -1,104 +1,220 @@
-const API_BASE = (window.location.hostname === 'localhost')
-    ? 'http://localhost:5001'
+/**
+ * Parking Slot Allocator — Frontend Controller
+ */
+
+const API_BASE_URL = window.location.protocol.startsWith('http')
+    ? ''
     : 'http://127.0.0.1:5001';
 
-async function syncSlots() {
-    try {
-        const res = await fetch(`${API_BASE}/api/status`);
-        const data = await res.json();
-        if (data.success) {
-            document.querySelectorAll('.slot').forEach(el => {
-                const id = el.querySelector('.slot-id').textContent;
-                el.classList.toggle('occupied', data.occupied_slots.includes(id));
-            });
+const defaultSlotContent = new Map();
+
+function captureDefaultSlotTemplates() {
+    document.querySelectorAll('.slot').forEach(slotElement => {
+        const slotId = slotElement.getAttribute('data-slot') || slotElement.querySelector('.slot-name')?.textContent.trim();
+        if (slotId) {
+            defaultSlotContent.set(slotId, slotElement.innerHTML);
         }
-    } catch (e) {
-        console.error('Failed to sync slots:', e);
+    });
+}
+
+async function fetchAndRenderSlots() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/status`);
+        const result = await response.json();
+        if (!result.success) return;
+
+        const occupiedSlotIds = new Set(result.occupied_slots || []);
+        const splitSlotsMap = result.splits || {};
+
+        // Update header statistics if available
+        if (result.stats) {
+            const occupiedCounter = document.getElementById('stat_occupied');
+            const availableCounter = document.getElementById('stat_available');
+            if (occupiedCounter) occupiedCounter.textContent = result.stats.occupied;
+            if (availableCounter) availableCounter.textContent = result.stats.available;
+        }
+
+        document.querySelectorAll('.slot').forEach(slotElement => {
+            const slotId = slotElement.getAttribute('data-slot') || slotElement.querySelector('.slot-name')?.textContent.trim();
+            if (!slotId) return;
+
+            if (splitSlotsMap[slotId]) {
+                // Slot is currently split into buddy parts
+                slotElement.classList.add('split');
+                slotElement.classList.remove('occupied');
+
+                const parts = splitSlotsMap[slotId];
+                let partsHtml = '';
+                parts.forEach(part => {
+                    const statusClass = part.occupied ? 'occupied' : 'free';
+                    partsHtml += `<div class="buddy-part ${statusClass}" data-part="${part.label}">${part.label}</div>`;
+                });
+                slotElement.innerHTML = partsHtml;
+
+                // Clicking an occupied part fills the exit input
+                slotElement.querySelectorAll('.buddy-part.occupied').forEach(partElement => {
+                    partElement.onclick = (event) => {
+                        event.stopPropagation();
+                        const exitInput = document.getElementById('exit_slot_id');
+                        if (exitInput) {
+                            exitInput.value = partElement.getAttribute('data-part');
+                            exitInput.focus();
+                        }
+                    };
+                });
+            } else {
+                // Standard slot
+                if (slotElement.classList.contains('split')) {
+                    slotElement.classList.remove('split');
+                    if (defaultSlotContent.has(slotId)) {
+                        slotElement.innerHTML = defaultSlotContent.get(slotId);
+                    }
+                }
+
+                const isOccupied = occupiedSlotIds.has(slotId);
+                slotElement.classList.toggle('occupied', isOccupied);
+
+                // Clicking an occupied slot fills the exit input
+                slotElement.onclick = () => {
+                    if (slotElement.classList.contains('occupied')) {
+                        const exitInput = document.getElementById('exit_slot_id');
+                        if (exitInput) {
+                            exitInput.value = slotId;
+                            exitInput.focus();
+                        }
+                    }
+                };
+            }
+        });
+
+    } catch (error) {
+        console.error('Failed to sync parking status:', error);
     }
 }
 
-function showError(el, msg) {
-    el.textContent = msg;
-    clearTimeout(el._t);
-    el._t = setTimeout(() => { el.textContent = ''; }, 4000);
+function displayStatus(element, message, isSuccess) {
+    if (!element) return;
+    element.textContent = message;
+    element.classList.toggle('success', isSuccess);
+
+    clearTimeout(element._timeoutHandle);
+    element._timeoutHandle = setTimeout(() => {
+        element.textContent = '';
+        element.classList.remove('success');
+    }, 4500);
 }
 
-function init() {
-    const parkMsg = document.getElementById('park-status');
-    const exitMsg = document.getElementById('exit-status');
+async function handleVehicleEntry() {
+    const statusElement = document.getElementById('park-status');
+    const plateInput = document.getElementById('plate_number');
+    const sizeSelect = document.getElementById('vehicle_size');
+    const algoSelect = document.getElementById('algo_select');
 
-    // Initial load and periodic refresh
-    syncSlots();
-    setInterval(syncSlots, 3000);
+    const licensePlate = plateInput.value.trim().toUpperCase();
+    const sizeString = sizeSelect.value;
+    const selectedAlgorithm = algoSelect.value;
 
-    // Park vehicle
-    document.getElementById('park_btn').addEventListener('click', async () => {
-        parkMsg.textContent = '';
+    if (!licensePlate) {
+        displayStatus(statusElement, 'Please enter a license plate number.', false);
+        plateInput.focus();
+        return;
+    }
 
-        const sizeStr = document.getElementById('vehicle_size').value;
-        const plate = document.getElementById('plate_number').value.trim().toUpperCase();
+    let vehicleSize = 1;
+    if (sizeString === 'medium') vehicleSize = 2;
+    if (sizeString === 'large') vehicleSize = 3;
 
-        if (!plate) {
-            showError(parkMsg, 'Please enter license plate number.');
-            return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/allocate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                vehicle_size: vehicleSize,
+                plate_number: licensePlate,
+                algo: selectedAlgorithm
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            displayStatus(statusElement, result.message, true);
+            plateInput.value = '';
+            fetchAndRenderSlots();
+        } else {
+            displayStatus(statusElement, result.message, false);
         }
+    } catch (error) {
+        displayStatus(statusElement, 'Could not connect to the backend server.', false);
+    }
+}
 
-        let sizeNum = 1;
-        if (sizeStr === 'medium') sizeNum = 2;
-        if (sizeStr === 'large') sizeNum = 3;
+async function handleVehicleExit() {
+    const statusElement = document.getElementById('exit-status');
+    const exitInput = document.getElementById('exit_slot_id');
+    const slotId = exitInput.value.trim().toUpperCase();
 
-        try {
-            const res = await fetch(`${API_BASE}/api/allocate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vehicle_size: sizeNum, plate_number: plate })
-            });
-            const result = await res.json();
+    if (!slotId) {
+        displayStatus(statusElement, 'Please enter a slot ID (e.g. A1 or B1.1).', false);
+        exitInput.focus();
+        return;
+    }
 
-            if (result.success) {
-                await syncSlots();
-                document.getElementById('plate_number').value = '';
-            } else {
-                showError(parkMsg, result.message);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/exit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slot_id: slotId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            displayStatus(statusElement, result.message, true);
+            exitInput.value = '';
+            fetchAndRenderSlots();
+        } else {
+            displayStatus(statusElement, result.message, false);
+        }
+    } catch (error) {
+        displayStatus(statusElement, 'Could not connect to the backend server.', false);
+    }
+}
+
+function initializeApp() {
+    captureDefaultSlotTemplates();
+    fetchAndRenderSlots();
+    setInterval(fetchAndRenderSlots, 3000);
+
+    // Park button and Enter key in entry form
+    const parkButton = document.getElementById('park_btn');
+    const plateInput = document.getElementById('plate_number');
+    if (parkButton) parkButton.addEventListener('click', handleVehicleEntry);
+    if (plateInput) {
+        plateInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleVehicleEntry();
             }
-        } catch (e) {
-            showError(parkMsg, 'Could not connect to server.');
-        }
-    });
+        });
+    }
 
-    // Exit vehicle
-    document.getElementById('exit_btn').addEventListener('click', async () => {
-        exitMsg.textContent = '';
-
-        const slot = document.getElementById('exit_slot_id').value.trim().toUpperCase();
-
-        if (!slot) {
-            showError(exitMsg, 'Please enter slot ID (e.g. A1).');
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_BASE}/api/exit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slot_id: slot })
-            });
-            const result = await res.json();
-
-            if (result.success) {
-                await syncSlots();
-                document.getElementById('exit_slot_id').value = '';
-            } else {
-                showError(exitMsg, result.message);
+    // Exit button and Enter key in exit form
+    const exitButton = document.getElementById('exit_btn');
+    const exitInput = document.getElementById('exit_slot_id');
+    if (exitButton) exitButton.addEventListener('click', handleVehicleExit);
+    if (exitInput) {
+        exitInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleVehicleExit();
             }
-        } catch (e) {
-            showError(exitMsg, 'Could not connect to server.');
-        }
-    });
+        });
+    }
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
-    init();
+    initializeApp();
 }
