@@ -14,18 +14,20 @@ def make_row():
     occupied = random.randint(0, TOTAL_SLOTS)
     occupancy_rate = round(occupied / TOTAL_SLOTS, 3)
 
-    vehicle_size = random.choice([1, 2, 3, 4])
+    vehicle_size = random.choice([1, 2, 3])
     free_exact_slots = random.randint(0, max(0, TOTAL_SLOTS - occupied))
     free_larger_slots = random.randint(0, max(0, TOTAL_SLOTS - occupied - free_exact_slots))
     split_slots_count = random.randint(0, 5)
 
     # Score that leans towards Best-Fit under high load, First-Fit otherwise.
     # Noise added so this isn't a perfectly learnable hard rule.
+    # Larger vehicles benefit more from Best-Fit (less wasted space when tight)
     score = (
         occupancy_rate * 3.5
         - free_exact_slots * 0.4
         + split_slots_count * 0.3
         - free_larger_slots * 0.1
+        + (vehicle_size - 1) * 0.3   # size 2 and 3 lean toward Best-Fit
     )
     noise = random.gauss(0, 0.45)
 

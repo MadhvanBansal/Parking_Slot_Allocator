@@ -2,7 +2,7 @@ import sqlite3
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-from buddy import can_split, slot_label, split_slot, all_parts_freed
+from buddy import can_split, slot_label, find_free_start
 from ml_model import predict
 
 app = Flask(__name__)
@@ -27,6 +27,25 @@ def serve_static(filename):
     return send_from_directory('.', filename)
 
 
+def get_active_parts(cursor, slot_id):
+    """Returns list of (part_start, part_size) for all active bookings in a split slot."""
+    cursor.execute(
+        "SELECT part_start, part_size FROM Bookings WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL",
+        (slot_id,)
+    )
+    return [(r['part_start'], r['part_size']) for r in cursor.fetchall()]
+
+
+def label_for_part(slot_id, part_start, part_size):
+    """
+    Generates a unique label for a split part based on its start byte position.
+    Part number = which vehicle_size-unit block this is (1-indexed).
+    Example: slot A2 (size 3), car (size 2) at start 0 → A2.1
+             bike (size 1) at start 2 → A2.3
+    """
+    return slot_label(slot_id, part_start + 1)
+
+
 @app.route('/api/status', methods=['GET'])
 def get_parking_status():
     connection = get_db()
@@ -40,29 +59,38 @@ def get_parking_status():
         cursor.execute("SELECT slot_id, size FROM Slots WHERE status = 'split'")
         for slot in cursor.fetchall():
             slot_id = slot['slot_id']
-
-            cursor.execute(
-                """
-                SELECT part_start, part_size FROM Bookings
-                WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL
-                """,
-                (slot_id,)
-            )
-            active_parts = [(row['part_start'], row['part_size']) for row in cursor.fetchall()]
-
-            # occupied parts
-            parts = [
-                {"label": slot_label(slot_id, (start // size) + 1), "occupied": True}
-                for start, size in active_parts
-            ]
-
-            # figure out which part numbers are taken so we can mark the other as free
-            taken_parts = set((start // size) + 1 for start, size in active_parts)
             slot_size = slot['size']
-            # each split always produces 2 parts (part 1 and part 2)
-            for p in (1, 2):
-                if p not in taken_parts:
-                    parts.append({"label": slot_label(slot_id, p), "occupied": False})
+
+            active_parts = get_active_parts(cursor, slot_id)
+            occupied_positions = set()
+            for start, size in active_parts:
+                for p in range(start, start + size):
+                    occupied_positions.add(p)
+
+            # Build parts list: one entry per unit position, then collapse runs
+            parts = []
+
+            # Occupied parts: one entry per active booking
+            for start, size in active_parts:
+                parts.append({
+                    "label": label_for_part(slot_id, start, size),
+                    "occupied": True
+                })
+
+            # Free ranges: find contiguous free runs in this slot
+            free_start = None
+            for pos in range(slot_size + 1):
+                if pos < slot_size and pos not in occupied_positions:
+                    if free_start is None:
+                        free_start = pos
+                else:
+                    if free_start is not None:
+                        run_size = pos - free_start
+                        parts.append({
+                            "label": label_for_part(slot_id, free_start, run_size),
+                            "occupied": False
+                        })
+                        free_start = None
 
             parts.sort(key=lambda x: x['label'])
             split_slots[slot_id] = parts
@@ -90,9 +118,9 @@ def get_parking_status():
 
 def allocate_best_fit(cursor, vehicle_size):
     """
-    Best-Fit: use the tightest fitting slot to minimize waste.
+    Best-Fit: minimize wasted space.
     1. Exact-size whole slot (zero waste).
-    2. Already-split slot with a free part that fits.
+    2. Existing split slot with a free range that fits (tightest first).
     3. Smallest larger whole slot — split it (Buddy System).
     """
     # 1. Exact whole slot
@@ -104,25 +132,18 @@ def allocate_best_fit(cursor, vehicle_size):
     if exact:
         return {"is_split": False, "slot_id": exact['slot_id'], "size": exact['size']}
 
-    # 2. Already split slot with a free part big enough
+    # 2. Split slot with enough free space (tightest slot size first)
     cursor.execute(
         "SELECT slot_id, size FROM Slots WHERE status = 'split' AND size > ? ORDER BY size ASC, position ASC",
         (vehicle_size,)
     )
     for slot in cursor.fetchall():
-        cursor.execute(
-            "SELECT part_start, part_size FROM Bookings WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL",
-            (slot['slot_id'],)
-        )
-        active_parts = [(r['part_start'], r['part_size']) for r in cursor.fetchall()]
-        # free space = slot size minus all occupied part sizes
-        used_space = sum(size for _, size in active_parts)
-        free_space = slot['size'] - used_space
-        if free_space >= vehicle_size:
-            next_start = used_space  # append after what's used
-            return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": next_start}
+        active_parts = get_active_parts(cursor, slot['slot_id'])
+        free_start = find_free_start(slot['size'], active_parts, vehicle_size)
+        if free_start is not None:
+            return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": free_start}
 
-    # 3. Split the smallest larger whole slot (Buddy System)
+    # 3. Smallest larger whole slot — split it
     cursor.execute(
         "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size > ? ORDER BY size ASC, position ASC LIMIT 1",
         (vehicle_size,)
@@ -136,33 +157,26 @@ def allocate_best_fit(cursor, vehicle_size):
 
 def allocate_first_fit(cursor, vehicle_size):
     """
-    First-Fit: scan all usable slots in entrance position order,
-    take the very first one that fits.
+    First-Fit: scan all slots in entrance position order, take the first that fits.
     """
     cursor.execute(
-        "SELECT slot_id, size, status, position FROM Slots WHERE status IN ('free', 'split') ORDER BY position ASC"
+        "SELECT slot_id, size, status FROM Slots WHERE status IN ('free', 'split') ORDER BY position ASC"
     )
     for slot in cursor.fetchall():
         if slot['status'] == 'free':
             if slot['size'] == vehicle_size:
-                # exact fit — take the whole slot
                 return {"is_split": False, "slot_id": slot['slot_id'], "size": slot['size']}
             if can_split(slot['size'], vehicle_size):
-                # larger slot — split it and take part 1
+                # Larger free slot — split it, vehicle takes position 0
                 return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": 0}
 
         elif slot['status'] == 'split':
-            cursor.execute(
-                "SELECT part_start, part_size FROM Bookings WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL",
-                (slot['slot_id'],)
-            )
-            active_parts = [(r['part_start'], r['part_size']) for r in cursor.fetchall()]
-            used_space = sum(size for _, size in active_parts)
-            free_space = slot['size'] - used_space
-            if free_space >= vehicle_size:
-                return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": used_space}
+            active_parts = get_active_parts(cursor, slot['slot_id'])
+            free_start = find_free_start(slot['size'], active_parts, vehicle_size)
+            if free_start is not None:
+                return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": free_start}
 
-    # Fallback: any free slot that fits (even if larger), no split needed
+    # Fallback: any free slot that fits without splitting
     cursor.execute(
         "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size >= ? ORDER BY position ASC LIMIT 1",
         (vehicle_size,)
@@ -197,14 +211,14 @@ def allocate_parking_slot():
             """,
             (license_plate,)
         )
-        existing_booking = cursor.fetchone()
-        if existing_booking:
+        existing = cursor.fetchone()
+        if existing:
             return jsonify({
                 "success": False,
-                "message": f"Vehicle is already parked in slot {existing_booking['slot_id']}"
+                "message": f"Vehicle is already parked in slot {existing['slot_id']}"
             }), 400
 
-        # Resolve algorithm
+        # Resolve algorithm — ML model uses full picture including free space in split slots
         if algorithm_selection == 'ML Model':
             cursor.execute("SELECT COUNT(*) AS count FROM Slots")
             total_slots = cursor.fetchone()['count'] or 30
@@ -215,18 +229,26 @@ def allocate_parking_slot():
             cursor.execute("SELECT COUNT(*) AS count FROM Slots WHERE status = 'split'")
             split_count = cursor.fetchone()['count'] or 0
 
+            # Count whole free slots that exactly match or are larger than vehicle
             cursor.execute("SELECT COUNT(*) AS count FROM Slots WHERE status = 'free' AND size = ?", (vehicle_size,))
             free_exact = cursor.fetchone()['count'] or 0
 
             cursor.execute("SELECT COUNT(*) AS count FROM Slots WHERE status = 'free' AND size > ?", (vehicle_size,))
             free_larger = cursor.fetchone()['count'] or 0
 
+            # Also count split slots that have usable free space for this vehicle
+            cursor.execute("SELECT slot_id, size FROM Slots WHERE status = 'split'")
+            for slot in cursor.fetchall():
+                active_parts = get_active_parts(cursor, slot['slot_id'])
+                if find_free_start(slot['size'], active_parts, vehicle_size) is not None:
+                    free_exact += 1  # treat usable split-slot free space as an exact match
+
             occupancy_rate = (occupied_count + split_count) / max(total_slots, 1)
             chosen_algorithm = predict(occupancy_rate, vehicle_size, free_exact, free_larger, split_count)
         else:
             chosen_algorithm = algorithm_selection
 
-        # Allocate slot based on algorithm
+        # Run allocation
         if chosen_algorithm == 'First-Fit':
             allocation = allocate_first_fit(cursor, vehicle_size)
         else:
@@ -250,18 +272,16 @@ def allocate_parking_slot():
         # Record split part booking
         if allocation['is_split']:
             base_slot_id = allocation['slot_id']
+            part_start = allocation['start']
+
             cursor.execute("UPDATE Slots SET status = 'split' WHERE slot_id = ?", (base_slot_id,))
             cursor.execute(
-                """
-                INSERT INTO Bookings (vehicle_id, slot_id, part_start, part_size, algo_used)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (vehicle_id, base_slot_id, allocation['start'], vehicle_size, chosen_algorithm)
+                "INSERT INTO Bookings (vehicle_id, slot_id, part_start, part_size, algo_used) VALUES (?, ?, ?, ?, ?)",
+                (vehicle_id, base_slot_id, part_start, vehicle_size, chosen_algorithm)
             )
             connection.commit()
 
-            part_num = (allocation['start'] // vehicle_size) + 1
-            assigned_label = slot_label(base_slot_id, part_num)
+            assigned_label = label_for_part(base_slot_id, part_start, vehicle_size)
             return jsonify({
                 "success": True,
                 "message": f"Parked in part {assigned_label} (Algo: {chosen_algorithm})",
@@ -269,7 +289,7 @@ def allocate_parking_slot():
                 "algo_used": chosen_algorithm
             }), 200
 
-        # Record standard slot booking
+        # Record standard whole-slot booking
         allocated_slot_id = allocation['slot_id']
         cursor.execute("UPDATE Slots SET status = 'occupied' WHERE slot_id = ?", (allocated_slot_id,))
         cursor.execute(
@@ -304,57 +324,51 @@ def exit_parking_slot():
     cursor = connection.cursor()
 
     try:
-        # Handle split slot part (e.g. B1.2)
+        # Handle split slot part (e.g. A2.3)
         if '.' in slot_id:
-            base_slot_id, part_number_str = slot_id.split('.', 1)
+            base_slot_id, part_num_str = slot_id.split('.', 1)
+
+            # part_num = part_start + 1 (see label_for_part)
+            try:
+                expected_start = int(part_num_str) - 1
+            except ValueError:
+                return jsonify({"success": False, "message": f"Invalid part label: {slot_id}"}), 400
 
             cursor.execute(
-                """
-                SELECT booking_id, part_start, part_size FROM Bookings
-                WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL
-                """,
-                (base_slot_id,)
+                "SELECT booking_id FROM Bookings WHERE slot_id = ? AND part_start = ? AND end_time IS NULL",
+                (base_slot_id, expected_start)
             )
-            matching_booking = None
-            for row in cursor.fetchall():
-                calculated_number = str((row['part_start'] // row['part_size']) + 1)
-                if calculated_number == part_number_str:
-                    matching_booking = row
-                    break
-
-            if not matching_booking:
+            booking = cursor.fetchone()
+            if not booking:
                 return jsonify({"success": False, "message": f"Part {slot_id} is not currently occupied"}), 404
 
             cursor.execute(
                 "UPDATE Bookings SET end_time = CURRENT_TIMESTAMP WHERE booking_id = ?",
-                (matching_booking['booking_id'],)
+                (booking['booking_id'],)
             )
 
-            # Check if all sibling parts are now empty so the slot can merge back
+            # If no active bookings remain, the slot merges back to free
             cursor.execute(
-                "SELECT COUNT(*) AS active_count FROM Bookings WHERE slot_id = ? AND end_time IS NULL",
+                "SELECT COUNT(*) AS count FROM Bookings WHERE slot_id = ? AND end_time IS NULL",
                 (base_slot_id,)
             )
-            has_remaining_parts = cursor.fetchone()['active_count'] > 0
-            if not has_remaining_parts:
+            remaining = cursor.fetchone()['count']
+            if remaining == 0:
                 cursor.execute("UPDATE Slots SET status = 'free' WHERE slot_id = ?", (base_slot_id,))
 
             connection.commit()
-            exit_message = f"Exited {slot_id} (Slot {base_slot_id} merged back)" if not has_remaining_parts else f"Exited {slot_id}"
-            return jsonify({"success": True, "message": exit_message, "merged": not has_remaining_parts}), 200
+            merged = remaining == 0
+            msg = f"Exited {slot_id} (Slot {base_slot_id} merged back)" if merged else f"Exited {slot_id}"
+            return jsonify({"success": True, "message": msg, "merged": merged}), 200
 
         # Handle standard whole slot
         cursor.execute(
-            """
-            SELECT booking_id FROM Bookings
-            WHERE slot_id = ? AND end_time IS NULL AND part_start IS NULL
-            """,
+            "SELECT booking_id FROM Bookings WHERE slot_id = ? AND end_time IS NULL AND part_start IS NULL",
             (slot_id,)
         )
         active_booking = cursor.fetchone()
 
         if not active_booking:
-            # Check if user passed a split parent slot without part suffix
             cursor.execute(
                 "SELECT 1 FROM Bookings WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL",
                 (slot_id,)
@@ -362,7 +376,7 @@ def exit_parking_slot():
             if cursor.fetchone():
                 return jsonify({
                     "success": False,
-                    "message": f"Slot {slot_id} is split into parts. Please specify part (e.g. {slot_id}.1)"
+                    "message": f"Slot {slot_id} is split. Use part label (e.g. {slot_id}.1)"
                 }), 400
             return jsonify({"success": False, "message": f"Slot {slot_id} is not currently occupied"}), 404
 

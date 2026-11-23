@@ -42,7 +42,7 @@ def initialize_database(db_filename=DEFAULT_DB_FILE):
     )
     ''')
 
-    # Mixed slot sizes: 1 = Bike (1 bay), 2 = Car (2 bays), 3 = SUV (4 bays)
+    # Slot sizes use abstract capacity units: 1 = Bike, 2 = Car, 3 = SUV
     default_slots = [
         # Zone A
         ('A1', 1, 1), ('A2', 3, 2), ('A3', 1, 3), ('A4', 2, 4),  ('A5', 1, 5),
