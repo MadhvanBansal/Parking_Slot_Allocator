@@ -1,3 +1,4 @@
+
 const API_BASE = (window.location.hostname === 'localhost')
     ? 'http://localhost:5001'
     : 'http://127.0.0.1:5001';
@@ -113,3 +114,13 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+// Prevent empty form submissions
+document.querySelectorAll("input").forEach(function(input) {
+    input.addEventListener("blur", function() {
+        if (input.value.trim() === "") {
+            input.classList.add("input-warning");
+        } else {
+            input.classList.remove("input-warning");
+        }
+    });
+});
