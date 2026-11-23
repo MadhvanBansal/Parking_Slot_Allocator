@@ -492,3 +492,19 @@ button {
 button:hover {
     transform: translateY(-1px);
 }
+/* Improve layout on smaller screens */
+@media (max-width: 600px) {
+    .container {
+        width: 95%;
+        margin: 0 auto;
+    }
+
+    .slot {
+        min-width: 45px;
+        min-height: 45px;
+    }
+
+    button {
+        width: 100%;
+    }
+}
