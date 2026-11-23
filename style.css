@@ -478,3 +478,8 @@ input:focus {
     border-color: #4CAF50;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
 }
+/* Add hover effect to parking slots */
+.slot:hover {
+    transform: translateY(-2px);
+    transition: 0.2s ease;
+}
