@@ -1,38 +1,47 @@
 import random
-import pandas as pd
+import csv
 
-def generate_parking_dataset(sample_count=3000, output_path='parking_dataset.csv'):
-    records = []
+# Generates a realistic parking dataset with noise so the model
+# actually has to learn patterns, not just memorize a hard rule.
 
-    for _ in range(sample_count):
-        occupancy_rate = round(random.uniform(0.0, 1.0), 3)
-        vehicle_size = random.choice([1, 2, 3])
+TOTAL_SLOTS = 30
+ROWS = 3000
+OUTPUT_FILE = 'parking_dataset.csv'
 
-        # Estimate realistic slot availability based on current lot occupancy
-        estimated_free = max(1, int(30 * (1.0 - occupancy_rate)))
-        free_exact_slots = random.randint(0, min(10, estimated_free))
-        free_larger_slots = random.randint(0, min(15, estimated_free)) if vehicle_size < 3 else 0
-        split_slots_count = random.randint(0, 5) if occupancy_rate > 0.35 else 0
+random.seed(42)
 
-        # High occupancy or missing exact slots warrants Best-Fit to prevent wasted space.
-        # Otherwise, First-Fit achieves faster allocation time with zero waste penalty.
-        if occupancy_rate > 0.60 or free_exact_slots == 0:
-            target_algorithm = 'Best-Fit'
-        else:
-            target_algorithm = 'First-Fit'
+def make_row():
+    occupied = random.randint(0, TOTAL_SLOTS)
+    occupancy_rate = round(occupied / TOTAL_SLOTS, 3)
 
-        records.append({
-            'occupancy_rate': occupancy_rate,
-            'vehicle_size': vehicle_size,
-            'free_exact_slots': free_exact_slots,
-            'free_larger_slots': free_larger_slots,
-            'split_slots_count': split_slots_count,
-            'target_algorithm': target_algorithm
-        })
+    vehicle_size = random.choice([1, 2, 3, 4])
+    free_exact_slots = random.randint(0, max(0, TOTAL_SLOTS - occupied))
+    free_larger_slots = random.randint(0, max(0, TOTAL_SLOTS - occupied - free_exact_slots))
+    split_slots_count = random.randint(0, 5)
 
-    dataset = pd.DataFrame(records)
-    dataset.to_csv(output_path, index=False)
-    print(f"Generated {len(records)} samples in {output_path}")
+    # Score that leans towards Best-Fit under high load, First-Fit otherwise.
+    # Noise added so this isn't a perfectly learnable hard rule.
+    score = (
+        occupancy_rate * 3.5
+        - free_exact_slots * 0.4
+        + split_slots_count * 0.3
+        - free_larger_slots * 0.1
+    )
+    noise = random.gauss(0, 0.45)
 
-if __name__ == '__main__':
-    generate_parking_dataset()
+    if (score + noise) > 1.5:
+        label = 'Best-Fit'
+    else:
+        label = 'First-Fit'
+
+    return [occupancy_rate, vehicle_size, free_exact_slots, free_larger_slots, split_slots_count, label]
+
+
+with open(OUTPUT_FILE, 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['occupancy_rate', 'vehicle_size', 'free_exact_slots',
+                     'free_larger_slots', 'split_slots_count', 'target_algorithm'])
+    for _ in range(ROWS):
+        writer.writerow(make_row())
+
+print(f"Generated {ROWS} rows -> {OUTPUT_FILE}")
