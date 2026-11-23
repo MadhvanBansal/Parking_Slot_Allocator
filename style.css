@@ -471,3 +471,10 @@ body {
         overflow: visible;
     }
 }
+
+/* Improve input focus styling */
+input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
+}
