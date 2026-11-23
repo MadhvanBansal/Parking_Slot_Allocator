@@ -93,69 +93,141 @@ def get_parking_status():
         connection.close()
 
 
-def find_split_candidate(cursor, vehicle_size, algorithm):
+def allocate_best_fit(cursor, vehicle_size):
     """
-    Finds a suitable buddy part for bike/car vehicles when needed.
-    Prioritizes filling already-split slots before splitting fresh ones.
+    Best-Fit: Minimizes wasted space (tightest fit first).
+    1. Reuses existing split slot if it has an exact or suitable free block.
+    2. Uses exact-size whole slot if available (waste = 0).
+    3. If no exact slot exists, splits the smallest available larger slot (Buddy System).
+    4. Fallback: smallest whole slot >= vehicle_size.
     """
-    # 1. Reuse existing split slot that has a free block
+    # 1. Check existing split slots for an exact or smallest fitting block
     cursor.execute(
         """
-        SELECT slot_id, size FROM Slots
+        SELECT slot_id, size, position FROM Slots
         WHERE status = 'split' AND size >= ?
         ORDER BY position ASC
         """,
         (vehicle_size,)
     )
+    best_split = None
     for slot in cursor.fetchall():
-        slot_id = slot['slot_id']
         cursor.execute(
             """
             SELECT part_start, part_size FROM Bookings
             WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL
             """,
-            (slot_id,)
+            (slot['slot_id'],)
         )
-        occupied_parts = [
-            (row['part_start'], row['part_size'])
-            for row in cursor.fetchall()
-        ]
-
-        block = pick_block(BAYS[slot['size']], occupied_parts, vehicle_size)
+        occupied = [(row['part_start'], row['part_size']) for row in cursor.fetchall()]
+        block = pick_block(BAYS[slot['size']], occupied, vehicle_size)
         if block:
-            return {"slot_id": slot_id, "size": slot['size'], "start": block[0]}
+            cand = (block[1], slot['position'], slot['slot_id'], slot['size'], block[0])
+            if best_split is None or cand < best_split:
+                best_split = cand
 
-    # 2. If a dedicated whole slot of exact size is free, do not split a fresh slot
+    # 2. Check exact-size whole slot (waste = 0)
     cursor.execute(
-        "SELECT slot_id FROM Slots WHERE status = 'free' AND size = ? LIMIT 1",
+        """
+        SELECT slot_id, size, position FROM Slots
+        WHERE status = 'free' AND size = ?
+        ORDER BY position ASC
+        LIMIT 1
+        """,
         (vehicle_size,)
     )
-    if cursor.fetchone():
-        return None
+    exact_whole = cursor.fetchone()
 
-    # 3. No exact slot free: split a larger slot based on selected algorithm
-    sort_order = "size ASC, position ASC" if algorithm == "Best-Fit" else "position ASC"
-    cursor.execute(
-        f"SELECT slot_id, size FROM Slots WHERE status = 'free' AND size > ? ORDER BY {sort_order}",
-        (vehicle_size,)
-    )
-    for slot in cursor.fetchall():
-        slot_id = slot['slot_id']
+    # If both exact whole slot and exact split block exist, pick earlier position
+    if best_split and exact_whole:
+        if best_split[0] == BAYS[vehicle_size]:
+            if best_split[1] <= exact_whole['position']:
+                return {"is_split": True, "slot_id": best_split[2], "size": best_split[3], "start": best_split[4]}
+            else:
+                return {"is_split": False, "slot_id": exact_whole['slot_id'], "size": exact_whole['size']}
+
+    if exact_whole:
+        return {"is_split": False, "slot_id": exact_whole['slot_id'], "size": exact_whole['size']}
+
+    if best_split:
+        return {"is_split": True, "slot_id": best_split[2], "size": best_split[3], "start": best_split[4]}
+
+    # 3. No exact slot free: split the smallest available larger slot (Buddy System)
+    if vehicle_size in (1, 2):
         cursor.execute(
             """
-            SELECT part_start, part_size FROM Bookings
-            WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL
+            SELECT slot_id, size FROM Slots
+            WHERE status = 'free' AND size > ?
+            ORDER BY size ASC, position ASC
             """,
-            (slot_id,)
+            (vehicle_size,)
         )
-        occupied_parts = [
-            (row['part_start'], row['part_size'])
-            for row in cursor.fetchall()
-        ]
+        for slot in cursor.fetchall():
+            cursor.execute(
+                """
+                SELECT part_start, part_size FROM Bookings
+                WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL
+                """,
+                (slot['slot_id'],)
+            )
+            occupied = [(row['part_start'], row['part_size']) for row in cursor.fetchall()]
+            block = pick_block(BAYS[slot['size']], occupied, vehicle_size)
+            if block:
+                return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": block[0]}
 
-        block = pick_block(BAYS[slot['size']], occupied_parts, vehicle_size)
-        if block:
-            return {"slot_id": slot_id, "size": slot['size'], "start": block[0]}
+    # 4. Fallback: smallest available whole slot
+    cursor.execute(
+        """
+        SELECT slot_id, size FROM Slots
+        WHERE status = 'free' AND size >= ?
+        ORDER BY size ASC, position ASC
+        LIMIT 1
+        """,
+        (vehicle_size,)
+    )
+    fallback = cursor.fetchone()
+    if fallback:
+        return {"is_split": False, "slot_id": fallback['slot_id'], "size": fallback['size']}
+
+    return None
+
+
+def allocate_first_fit(cursor, vehicle_size):
+    """
+    First-Fit: Scans strictly in entrance position order (positions 1-30).
+    Allocates the very first available slot or split part that can fit the vehicle.
+    """
+    cursor.execute("SELECT 1 FROM Slots WHERE status = 'free' AND size = ? LIMIT 1", (vehicle_size,))
+    has_exact_whole = cursor.fetchone() is not None
+
+    cursor.execute(
+        """
+        SELECT slot_id, size, status, position FROM Slots
+        WHERE status IN ('free', 'split')
+        ORDER BY position ASC
+        """
+    )
+    for slot in cursor.fetchall():
+        if slot['status'] == 'split':
+            cursor.execute(
+                """
+                SELECT part_start, part_size FROM Bookings
+                WHERE slot_id = ? AND end_time IS NULL AND part_start IS NOT NULL
+                """,
+                (slot['slot_id'],)
+            )
+            occupied = [(row['part_start'], row['part_size']) for row in cursor.fetchall()]
+            block = pick_block(BAYS[slot['size']], occupied, vehicle_size)
+            if block:
+                return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": block[0]}
+
+        elif slot['status'] == 'free':
+            if slot['size'] >= vehicle_size:
+                # If slot is larger and no exact slots exist, split it under Buddy System
+                if slot['size'] > vehicle_size and not has_exact_whole and vehicle_size in (1, 2):
+                    return {"is_split": True, "slot_id": slot['slot_id'], "size": slot['size'], "start": 0}
+                # Otherwise, take the whole slot immediately (First Open!)
+                return {"is_split": False, "slot_id": slot['slot_id'], "size": slot['size']}
 
     return None
 
@@ -212,42 +284,14 @@ def allocate_parking_slot():
         else:
             chosen_algorithm = algorithm_selection
 
-        split_candidate = None
-        allocated_slot_id = None
+        # Allocate slot based on algorithm
+        if chosen_algorithm == 'First-Fit':
+            allocation = allocate_first_fit(cursor, vehicle_size)
+        else:
+            allocation = allocate_best_fit(cursor, vehicle_size)
 
-        if vehicle_size in (1, 2):
-            split_candidate = find_split_candidate(cursor, vehicle_size, chosen_algorithm)
-
-        if not split_candidate:
-            if chosen_algorithm == 'First-Fit':
-                cursor.execute(
-                    "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size = ? ORDER BY position ASC LIMIT 1",
-                    (vehicle_size,)
-                )
-                matching_slot = cursor.fetchone()
-                if not matching_slot:
-                    cursor.execute(
-                        "SELECT slot_id, size FROM Slots WHERE status = 'free' AND size >= ? ORDER BY position ASC LIMIT 1",
-                        (vehicle_size,)
-                    )
-                    matching_slot = cursor.fetchone()
-            else:
-                # Best-Fit: minimize wasted bay capacity, break ties by entrance position
-                cursor.execute(
-                    """
-                    SELECT slot_id, size FROM Slots
-                    WHERE status = 'free' AND size >= ?
-                    ORDER BY (size - ?) ASC, position ASC
-                    LIMIT 1
-                    """,
-                    (vehicle_size, vehicle_size)
-                )
-                matching_slot = cursor.fetchone()
-
-            if not matching_slot:
-                return jsonify({"success": False, "message": "No suitable parking slot available"}), 404
-
-            allocated_slot_id = matching_slot['slot_id']
+        if not allocation:
+            return jsonify({"success": False, "message": "No suitable parking slot available"}), 404
 
         # Ensure vehicle record exists
         cursor.execute("SELECT vehicle_id FROM Vehicles WHERE plate_number = ?", (license_plate,))
@@ -262,19 +306,19 @@ def allocate_parking_slot():
             vehicle_id = cursor.lastrowid
 
         # Record split part booking
-        if split_candidate:
-            base_slot_id = split_candidate['slot_id']
+        if allocation['is_split']:
+            base_slot_id = allocation['slot_id']
             cursor.execute("UPDATE Slots SET status = 'split' WHERE slot_id = ?", (base_slot_id,))
             cursor.execute(
                 """
                 INSERT INTO Bookings (vehicle_id, slot_id, part_start, part_size, algo_used)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (vehicle_id, base_slot_id, split_candidate['start'], vehicle_size, chosen_algorithm)
+                (vehicle_id, base_slot_id, allocation['start'], vehicle_size, chosen_algorithm)
             )
             connection.commit()
 
-            assigned_label = part_label(base_slot_id, split_candidate['start'], vehicle_size)
+            assigned_label = part_label(base_slot_id, allocation['start'], vehicle_size)
             return jsonify({
                 "success": True,
                 "message": f"Parked in part {assigned_label} (Algo: {chosen_algorithm})",
@@ -283,6 +327,7 @@ def allocate_parking_slot():
             }), 200
 
         # Record standard slot booking
+        allocated_slot_id = allocation['slot_id']
         cursor.execute("UPDATE Slots SET status = 'occupied' WHERE slot_id = ?", (allocated_slot_id,))
         cursor.execute(
             "INSERT INTO Bookings (vehicle_id, slot_id, algo_used) VALUES (?, ?, ?)",
