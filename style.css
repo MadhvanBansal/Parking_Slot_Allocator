@@ -483,3 +483,12 @@ input:focus {
     transform: translateY(-2px);
     transition: 0.2s ease;
 }
+/* Improve parking action button */
+button {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
