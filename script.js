@@ -217,6 +217,7 @@ async function handleVehicleEntry() {
 async function handleVehicleExit() {
     const statusElement = document.getElementById('exit-status');
     const exitInput = document.getElementById('exit_slot_id');
+    const exitButton = document.getElementById('exit_btn');
 
     if (!exitInput) return;
 
@@ -227,6 +228,9 @@ async function handleVehicleExit() {
         exitInput.focus();
         return;
     }
+
+    // Prevent duplicate exit requests while processing
+    if (exitButton) exitButton.disabled = true;
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/exit`, {
@@ -247,6 +251,9 @@ async function handleVehicleExit() {
 
     } catch (error) {
         displayStatus(statusElement, 'Could not connect to the backend server.', false);
+    } finally {
+        // Re-enable the Exit button after the request finishes
+        if (exitButton) exitButton.disabled = false;
     }
 }
 
