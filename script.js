@@ -1,6 +1,6 @@
-
 /**
  * Parking Slot Allocator — Frontend Controller
+
  * Handles vehicle entry, exit, validation and slot updates.
  */
 
@@ -57,6 +57,7 @@ async function fetchAndRenderSlots() {
 
                 parts.forEach(part => {
                     const statusClass = part.occupied ? 'occupied' : 'free';
+
                     partsHtml += `<div class="buddy-part ${statusClass}" data-part="${part.label}">${part.label}</div>`;
                 });
 
@@ -176,6 +177,8 @@ async function handleVehicleEntry() {
         sizeSelect.focus();
         return;
     }
+
+    displayStatus(statusElement, 'Allocating parking slot...', true);
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/allocate`, {
