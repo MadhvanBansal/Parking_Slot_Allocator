@@ -2,7 +2,6 @@ CREATE DATABASE IF NOT EXISTS parking_system;
 
 USE parking_system;
 
-DROP TABLE IF EXISTS Fragmentation_Log;
 DROP TABLE IF EXISTS Bookings;
 DROP TABLE IF EXISTS Slots;
 DROP TABLE IF EXISTS Vehicles;
