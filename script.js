@@ -147,6 +147,7 @@ async function handleVehicleEntry() {
     const plateInput = document.getElementById('plate_number');
     const sizeSelect = document.getElementById('vehicle_size');
     const algoSelect = document.getElementById('algo_select');
+    const parkButton = document.getElementById('park_btn');
 
     if (!plateInput || !sizeSelect || !algoSelect) return;
 
@@ -180,6 +181,9 @@ async function handleVehicleEntry() {
 
     displayStatus(statusElement, 'Allocating parking slot...', true);
 
+    // Prevent duplicate parking requests while allocation is processing
+    if (parkButton) parkButton.disabled = true;
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/allocate`, {
             method: 'POST',
@@ -203,6 +207,9 @@ async function handleVehicleEntry() {
 
     } catch (error) {
         displayStatus(statusElement, 'Could not connect to the backend server.', false);
+    } finally {
+        // Re-enable the Park button after allocation finishes
+        if (parkButton) parkButton.disabled = false;
     }
 }
 
