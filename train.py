@@ -1,14 +1,12 @@
 import pickle
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 
-DATASET = 'parking_dataset.csv'
-MODEL_FILE = 'model.pkl'
+DATASET_PATH = 'parking_dataset.csv'
+MODEL_PATH = 'model.pkl'
 
-FEATURE_COLS = [
+FEATURE_COLUMNS = [
     'occupancy_rate',
     'vehicle_size',
     'free_exact_slots',
@@ -16,44 +14,29 @@ FEATURE_COLS = [
     'split_slots_count'
 ]
 
+
 def train_model():
-    df = pd.read_csv(DATASET)
-    X = df[FEATURE_COLS]
-    y = df['target_algorithm']
+    dataset = pd.read_csv(DATASET_PATH)
+    features = dataset[FEATURE_COLUMNS]
+    target = dataset['target_algorithm']
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(
+        features, target, test_size=0.20, random_state=42
+    )
 
-    candidates = {
-        'Decision Tree':        DecisionTreeClassifier(max_depth=5, random_state=42),
-        'Logistic Regression':  LogisticRegression(max_iter=200, random_state=42),
-        'Random Forest':        RandomForestClassifier(n_estimators=100, random_state=42),
-        'Gradient Boosting':    GradientBoostingClassifier(n_estimators=100, random_state=42),
-    }
+    model = GradientBoostingClassifier(n_estimators=100, random_state=42)
+    model.fit(x_train, y_train)
 
-    print(f"\n{'Algorithm':<22} {'Train Acc':>10} {'Test Acc':>10}")
-    print('-' * 44)
+    train_accuracy = model.score(x_train, y_train)
+    test_accuracy = model.score(x_test, y_test)
+    print(f"Training accuracy: {train_accuracy * 100:.1f}%")
+    print(f"Testing accuracy:  {test_accuracy * 100:.1f}%")
 
-    best_name = None
-    best_acc = 0.0
-    best_model = None
+    with open(MODEL_PATH, 'wb') as file:
+        pickle.dump(model, file)
 
-    for name, clf in candidates.items():
-        clf.fit(X_train, y_train)
-        train_acc = clf.score(X_train, y_train)
-        test_acc = clf.score(X_test, y_test)
-        print(f"{name:<22} {train_acc * 100:>9.1f}% {test_acc * 100:>9.1f}%")
+    print(f"Saved Gradient Boosting -> {MODEL_PATH}")
 
-        if test_acc > best_acc:
-            best_acc = test_acc
-            best_name = name
-            best_model = clf
-
-    print(f"\nBest: {best_name}  ({best_acc * 100:.1f}% test accuracy)")
-
-    with open(MODEL_FILE, 'wb') as f:
-        pickle.dump(best_model, f)
-
-    print(f"Saved {best_name} -> {MODEL_FILE}\n")
 
 if __name__ == '__main__':
     train_model()
